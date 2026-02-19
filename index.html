@@ -1,182 +1,433 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>실전모의고사 점수 관리 시스템</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body { font-family: Arial; background:#f4f6f9; margin:0; padding:20px; }
-.container { max-width:1100px; margin:auto; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);} 
-h1{text-align:center;}
-input,select,button{padding:10px;margin:5px 0;width:100%;box-sizing:border-box;}
-button{background:#4CAF50;color:white;border:none;border-radius:6px;cursor:pointer;}
-button:hover{background:#45a049;}
-table{width:100%;margin-top:20px;border-collapse:collapse;}
-th,td{border:1px solid #ddd;padding:8px;text-align:center;}
-th{background:#f2f2f2;}
-.hidden{display:none;}
-.section{background:#eef2ff;padding:15px;margin-top:20px;border-radius:8px;}
-.type-item{display:flex;justify-content:space-between;margin:5px 0;}
-.small-btn{width:auto;padding:5px 10px;background:#e74c3c;}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ScoreBoard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#111827,#4f46e5);margin:0;padding:20px}
+    .container{max-width:980px;margin:auto;background:#fff;padding:22px 22px 26px;border-radius:20px;box-shadow:0 15px 40px rgba(0,0,0,.25);position:relative}
+    h1{margin:6px 0 14px;text-align:center}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;margin:6px 0}
+    .top-right{position:absolute;top:14px;right:16px;display:flex;gap:10px;align-items:center}
+    .link-btn{font-size:12px;color:#4f46e5;cursor:pointer;user-select:none}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row > *{flex:1 1 180px}
+    input,select,button{padding:10px;margin:6px 0;width:100%;box-sizing:border-box;border-radius:10px;border:1px solid #d1d5db}
+    button{background:#4f46e5;color:#fff;border:none;cursor:pointer;font-weight:700}
+    button:hover{background:#4338ca}
+    .ghost{background:#111827}
+    .ghost:hover{background:#0b1220}
+    .section{margin-top:18px;padding:14px;border:1px solid #eef2ff;border-radius:14px;background:#fafbff}
+    .section h3{margin:0 0 10px}
+    table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff;border-radius:12px;overflow:hidden}
+    th,td{border-bottom:1px solid #eee;padding:10px;text-align:center}
+    th{background:#f3f4f6}
+    .muted{color:#6b7280;font-size:12px}
+    .hidden{display:none !important}
+    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    @media (max-width: 720px){.cards{grid-template-columns:1fr}}
+    .card{background:#fff;border:1px solid #eee;border-radius:14px;padding:12px}
+    .card .t{font-weight:700;margin-bottom:4px}
+    .card .d{font-size:13px;color:#374151}
+    canvas{margin-top:14px}
+    .danger{background:#dc2626}
+    .danger:hover{background:#b91c1c}
+  </style>
 </head>
 <body>
+  <div class="container">
+    <div class="top-right">
+      <span id="manageTab" class="link-btn hidden">관리</span>
+      <span id="logoutBtn" class="link-btn hidden">로그아웃</span>
+    </div>
 
-<div id="loginPage" class="container">
-<h1>🔐 로그인</h1>
-<input type="password" id="password" placeholder="비밀번호 입력">
-<button onclick="login()">로그인</button>
-</div>
+    <h1>📊 ScoreBoard</h1>
+    <div id="roleBadge" class="badge hidden"></div>
 
-<div id="mainPage" class="container hidden">
-<h1>📊 실전모의고사 점수 관리</h1>
+    <!-- 로그인 -->
+    <div id="loginSection" class="section">
+      <h3>🔐 로그인</h3>
+      <input id="pwInput" type="password" placeholder="비밀번호 입력" />
+      <button id="loginBtn">로그인</button>
+      <div class="muted">처음 기본 비밀번호(의 등급): <b>0704160931</b></div>
+    </div>
 
-<div class="section">
-<h3>📚 모의고사 종류 관리</h3>
-<input type="text" id="newType" placeholder="새 모의고사 종류 추가">
-<button onclick="addType()">종류 추가</button>
-<div id="typeList"></div>
-</div>
+    <!-- 점수 (모든 등급 보기 가능, 의만 수정/추가/삭제) -->
+    <div id="scoresSection" class="section hidden">
+      <h3>📈 점수</h3>
 
-<div class="section">
-<h3>✏ 점수 입력</h3>
-<select id="examType"></select>
-<input type="number" id="round" placeholder="회차 입력 (예: 1, 2, 3)">
-<input type="number" id="korean" placeholder="국어 점수">
-<input type="number" id="math" placeholder="수학 점수">
-<input type="number" id="english" placeholder="영어 점수">
-<input type="number" id="percentile" placeholder="백분위 (나중에 대학추천용)">
-<button onclick="addScore()">점수 추가</button>
-</div>
+      <div id="scoreEditor" class="hidden">
+        <div class="row">
+          <input id="examName" placeholder="시험 이름 (예: 3월 학평 1회)" />
+          <input id="korean" type="number" placeholder="국어" />
+          <input id="math" type="number" placeholder="수학" />
+          <input id="english" type="number" placeholder="영어" />
+        </div>
+        <button id="addScoreBtn">점수 추가</button>
+        <div class="muted">* 점수 추가/삭제는 <b>의</b> 등급만 가능</div>
+      </div>
 
-<div class="section">
-<h3>🔎 모의고사 분석 보기</h3>
-<select id="viewType" onchange="renderAnalysis()"></select>
-<select id="viewRound" onchange="renderAnalysis()"></select>
-<div id="analysisResult"></div>
-</div>
+      <table>
+        <thead>
+          <tr>
+            <th>시험</th><th>국어</th><th>수학</th><th>영어</th><th>총점</th>
+            <th id="delColHead" class="hidden">삭제</th>
+          </tr>
+        </thead>
+        <tbody id="scoreTable"></tbody>
+      </table>
 
-<div class="section">
-<h3>🏫 지원 가능 대학 (백분위 기준)</h3>
-<div id="universityResult">백분위 데이터를 입력하면 표시됩니다.</div>
-</div>
+      <canvas id="scoreChart"></canvas>
+    </div>
 
-</div>
+    <!-- 대학정보: 한 이상(한/치/의) -->
+    <div id="universitySection" class="section hidden">
+      <h3>🎓 대학정보 (한 이상)</h3>
+      <div class="muted">나중에 너가 주는 “백분위별 대학 리스트”를 넣으면 여기 카드로 보여줄 수 있게 해둘게.</div>
+      <div class="cards" id="univCards">
+        <div class="card">
+          <div class="t">예시) 상위권 대학</div>
+          <div class="d">백분위 96+ → ○○대, △△대 …</div>
+        </div>
+        <div class="card">
+          <div class="t">예시) 중상위권 대학</div>
+          <div class="d">백분위 90+ → □□대, ◇◇대 …</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2026 정보: 치 이상(치/의) -->
+    <div id="info2026Section" class="section hidden">
+      <h3>🗓 2026학년도 실모/시험 정보 (치 이상)</h3>
+      <div class="cards">
+        <div class="card">
+          <div class="t">예시) 2026 학평 일정</div>
+          <div class="d">여기에 2026 관련 핵심 자료를 카드로 정리</div>
+        </div>
+        <div class="card">
+          <div class="t">예시) 2026 실모 체크리스트</div>
+          <div class="d">오답/시간관리/전략 메모 등</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 자료실: 상위 등급이 하위 등급 자료까지 열람 -->
+    <div id="materialsSection" class="section hidden">
+      <h3>📚 주요자료</h3>
+      <div class="muted">등급이 높을수록 더 많이 봄 (의>치>한>약>수)</div>
+      <div class="cards">
+        <div class="card" data-grade="치">
+          <div class="t">치 등급 자료</div>
+          <div class="d">치 이상만 보이게 설정된 카드</div>
+        </div>
+        <div class="card" data-grade="한">
+          <div class="t">한 등급 자료</div>
+          <div class="d">한 이상에게 보이는 카드</div>
+        </div>
+        <div class="card" data-grade="약">
+          <div class="t">약 등급 자료</div>
+          <div class="d">약 이상에게 보이는 카드</div>
+        </div>
+        <div class="card" data-grade="수">
+          <div class="t">수 등급 자료</div>
+          <div class="d">수 이상(=모두)에게 보이는 카드</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 관리(의 전용): 계정/권한 + 로그인 기록 -->
+    <div id="manageSection" class="section hidden">
+      <h3>🛠 관리 (의 전용)</h3>
+
+      <div class="section" style="background:#fff">
+        <h3 style="margin-bottom:6px">👤 비밀번호/등급 만들기</h3>
+        <div class="row">
+          <input id="newPw" placeholder="새 비밀번호(사람별로)" />
+          <select id="newGrade">
+            <option value="치">치</option>
+            <option value="한">한</option>
+            <option value="약">약</option>
+            <option value="수">수</option>
+            <option value="의">의</option>
+          </select>
+        </div>
+        <button id="addUserBtn" class="ghost">추가</button>
+        <div class="muted">* 비밀번호는 화면에 그대로 노출하지 않음 (목록엔 ****로 표시)</div>
+        <div id="userList" style="margin-top:10px"></div>
+      </div>
+
+      <div class="section" style="background:#fff">
+        <h3 style="margin-bottom:6px">🧾 로그인 기록</h3>
+        <div id="loginRecords" class="muted"></div>
+        <button id="clearLogsBtn" class="danger">로그인 기록 전체 삭제</button>
+      </div>
+    </div>
+
+  </div>
 
 <script>
-const SITE_PASSWORD="1234";
+  // ===== 저장 키 =====
+  const KEY_SCORES = "sb_scores";
+  const KEY_USERS  = "sb_users";
+  const KEY_LOGS   = "sb_login_records";
 
-let scores=JSON.parse(localStorage.getItem('scores'))||[];
-let examTypes=JSON.parse(localStorage.getItem('examTypes'))||["학력평가","수능","사설","서바이벌"];
+  // ===== 등급 계층 (높을수록 상위) =====
+  const gradeHierarchy = { "의": 5, "치": 4, "한": 3, "약": 2, "수": 1 };
 
-// 나중에 네가 대학 리스트 주면 여기에 추가하면 됨
-let universityData={
-// 예시
-// 95:["의대A","의대B"],
-// 90:["연세대","고려대"],
-};
+  // ===== 초기 데이터 =====
+  let scores = JSON.parse(localStorage.getItem(KEY_SCORES) || "[]");
+  let users  = JSON.parse(localStorage.getItem(KEY_USERS)  || "null");
+  if (!users) {
+    users = { "0704160931": "의" }; // 기본 의 비밀번호
+    localStorage.setItem(KEY_USERS, JSON.stringify(users));
+  }
 
-function login(){
-if(document.getElementById('password').value===SITE_PASSWORD){
-document.getElementById('loginPage').classList.add('hidden');
-document.getElementById('mainPage').classList.remove('hidden');
-renderTypes();
-renderAnalysisSelectors();
-}else alert('비밀번호가 틀렸습니다');
-}
+  let currentGrade = null;
 
-function saveTypes(){localStorage.setItem('examTypes',JSON.stringify(examTypes));}
+  // ===== DOM =====
+  const $ = (id) => document.getElementById(id);
 
-function renderTypes(){
-const select=document.getElementById('examType');
-const viewSelect=document.getElementById('viewType');
-select.innerHTML=''; viewSelect.innerHTML='';
-examTypes.forEach(type=>{
-let opt1=new Option(type,type);
-let opt2=new Option(type,type);
-select.add(opt1);
-viewSelect.add(opt2);
-});
+  const loginSection = $("loginSection");
+  const scoresSection = $("scoresSection");
+  const scoreEditor = $("scoreEditor");
+  const delColHead = $("delColHead");
 
-const list=document.getElementById('typeList');
-list.innerHTML='';
-examTypes.forEach(type=>{
-let div=document.createElement('div');
-div.className='type-item';
-div.innerHTML=`${type} <button class='small-btn' onclick="deleteType('${type}')">삭제</button>`;
-list.appendChild(div);
-});
-}
+  const universitySection = $("universitySection");
+  const info2026Section = $("info2026Section");
+  const materialsSection = $("materialsSection");
 
-function addType(){
-const val=document.getElementById('newType').value.trim();
-if(!val||examTypes.includes(val)) return;
-examTypes.push(val);
-saveTypes();
-document.getElementById('newType').value='';
-renderTypes();
-}
+  const roleBadge = $("roleBadge");
+  const manageTab = $("manageTab");
+  const manageSection = $("manageSection");
+  const logoutBtn = $("logoutBtn");
 
-function deleteType(type){
-examTypes=examTypes.filter(t=>t!==type);
-saveTypes();
-renderTypes();
-}
+  // ===== 로그인 기록 =====
+  function saveLoginRecord(grade) {
+    const logs = JSON.parse(localStorage.getItem(KEY_LOGS) || "[]");
+    logs.push({ grade, time: new Date().toLocaleString() });
+    localStorage.setItem(KEY_LOGS, JSON.stringify(logs));
+  }
 
-function addScore(){
-const type=document.getElementById('examType').value;
-const round=parseInt(document.getElementById('round').value);
-const korean=parseInt(document.getElementById('korean').value);
-const math=parseInt(document.getElementById('math').value);
-const english=parseInt(document.getElementById('english').value);
-const percentile=parseInt(document.getElementById('percentile').value);
-if(isNaN(round)||isNaN(korean)||isNaN(math)||isNaN(english)) return;
+  function renderLoginRecords() {
+    if (currentGrade !== "의") return;
+    const logs = JSON.parse(localStorage.getItem(KEY_LOGS) || "[]");
+    const box = $("loginRecords");
+    if (!box) return;
+    if (logs.length === 0) {
+      box.innerText = "기록 없음";
+      return;
+    }
+    box.innerHTML = logs.slice().reverse().map(l => `• [${l.time}] 등급: ${l.grade}`).join("<br/>");
+  }
 
-const total=korean+math+english;
-scores.push({type,round,korean,math,english,total,percentile});
-localStorage.setItem('scores',JSON.stringify(scores));
-renderAnalysisSelectors();
-renderAnalysis();
-}
+  // ===== 권한 적용 =====
+  function applyPermissions() {
+    const level = gradeHierarchy[currentGrade];
 
-function renderAnalysisSelectors(){
-const type=document.getElementById('viewType').value||examTypes[0];
-const rounds=[...new Set(scores.filter(s=>s.type===type).map(s=>s.round))];
-const roundSelect=document.getElementById('viewRound');
-roundSelect.innerHTML='';
-roundSelect.add(new Option('전체','all'));
-rounds.forEach(r=>roundSelect.add(new Option(r+'회차',r)));
-}
+    // 기본 화면 열기
+    loginSection.classList.add("hidden");
+    scoresSection.classList.remove("hidden");
+    materialsSection.classList.remove("hidden");
+    logoutBtn.classList.remove("hidden");
 
-function renderAnalysis(){
-const type=document.getElementById('viewType').value;
-const round=document.getElementById('viewRound').value;
-let filtered=scores.filter(s=>s.type===type);
-if(round!=='all') filtered=filtered.filter(s=>s.round==round);
-if(filtered.length===0){document.getElementById('analysisResult').innerHTML='데이터 없음';return;}
+    roleBadge.classList.remove("hidden");
+    roleBadge.textContent = `현재 등급: ${currentGrade}`;
 
-let avg=(filtered.reduce((a,b)=>a+b.total,0)/filtered.length).toFixed(1);
-let myLatest=filtered[filtered.length-1];
+    // 의만 수정/추가/삭제 + 관리탭
+    const isUi = (currentGrade === "의");
+    scoreEditor.classList.toggle("hidden", !isUi);
+    delColHead.classList.toggle("hidden", !isUi);
+    manageTab.classList.toggle("hidden", !isUi);
 
-let html=`<b>${type}</b><br>`;
-if(round==='all') html+=`전체 평균: ${avg}<br>`;
-else html+=`${round}회차 평균: ${avg}<br>`;
+    // 대학정보: 한 이상
+    universitySection.classList.toggle("hidden", !(level >= gradeHierarchy["한"]));
 
-html+=`내 최근 점수: ${myLatest.total}<br>`;
+    // 2026 정보: 치 이상
+    info2026Section.classList.toggle("hidden", !(level >= gradeHierarchy["치"]));
 
-if(myLatest.percentile){
-let possible=[];
-for(let p in universityData){
-if(myLatest.percentile>=p) possible=possible.concat(universityData[p]);
-}
-document.getElementById('universityResult').innerHTML=
-possible.length?possible.join('<br>'):'해당 백분위 대학 데이터 없음';
-}
+    // 자료실 카드: 상위가 하위까지 봄
+    document.querySelectorAll("[data-grade]").forEach(card => {
+      const g = card.getAttribute("data-grade");
+      const cardLevel = gradeHierarchy[g];
+      card.style.display = (level >= cardLevel) ? "block" : "none";
+    });
 
-document.getElementById('analysisResult').innerHTML=html;
-}
+    // 의면 로그인기록도 보여줌(관리 열었을 때)
+    if (isUi) renderLoginRecords();
+  }
 
+  // ===== 스코어 렌더 =====
+  function saveScores() {
+    localStorage.setItem(KEY_SCORES, JSON.stringify(scores));
+  }
+
+  function renderTable() {
+    const tbody = $("scoreTable");
+    tbody.innerHTML = "";
+    scores.forEach((s, idx) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(s.examName)}</td>
+        <td>${s.korean}</td>
+        <td>${s.math}</td>
+        <td>${s.english}</td>
+        <td><b>${s.total}</b></td>
+        ${currentGrade === "의" ? `<td><button class="danger" onclick="deleteScore(${idx})">삭제</button></td>` : ""}
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  window.deleteScore = function(idx) {
+    if (currentGrade !== "의") return;
+    scores.splice(idx, 1);
+    saveScores();
+    renderTable();
+    renderChart();
+  }
+
+  function renderChart() {
+    const ctx = $("scoreChart").getContext("2d");
+    const labels = scores.map(s => s.examName);
+    const totals = scores.map(s => s.total);
+
+    if (window.myChart) window.myChart.destroy();
+
+    window.myChart = new Chart(ctx, {
+      type: "line",
+      data: { labels, datasets: [{ label: "총점 추이", data: totals, fill: false }] },
+      options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+  }
+
+  // ===== 유저(비밀번호/등급) 관리 (의 전용) =====
+  function saveUsers() {
+    localStorage.setItem(KEY_USERS, JSON.stringify(users));
+  }
+
+  function renderUsers() {
+    if (currentGrade !== "의") return;
+    const wrap = $("userList");
+    wrap.innerHTML = "";
+
+    Object.keys(users).forEach(pw => {
+      const grade = users[pw];
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <div class="t">비밀번호: ****</div>
+        <div class="d">등급: <b>${grade}</b></div>
+        <button class="danger" style="margin-top:8px" onclick="removeUser('${escapeAttr(pw)}')">삭제</button>
+      `;
+      // 기본 의 비번 삭제 방지(원하면 나중에 풀어줄게)
+      if (pw === "0704160931") {
+        div.querySelector("button").disabled = true;
+        div.querySelector("button").textContent = "기본 의 비번(삭제 불가)";
+        div.querySelector("button").style.opacity = "0.6";
+        div.querySelector("button").style.cursor = "not-allowed";
+      }
+      wrap.appendChild(div);
+    });
+  }
+
+  window.removeUser = function(pw) {
+    if (currentGrade !== "의") return;
+    if (pw === "0704160931") return;
+    delete users[pw];
+    saveUsers();
+    renderUsers();
+  }
+
+  // ===== 이벤트 =====
+  $("loginBtn").addEventListener("click", () => {
+    const pw = $("pwInput").value;
+    const grade = users[pw];
+    if (!grade) {
+      alert("비밀번호가 틀렸습니다.");
+      return;
+    }
+    currentGrade = grade;
+    saveLoginRecord(currentGrade);
+    applyPermissions();
+    renderTable();
+    renderChart();
+  });
+
+  $("addScoreBtn").addEventListener("click", () => {
+    if (currentGrade !== "의") return;
+
+    const examName = $("examName").value.trim();
+    const korean = parseInt($("korean").value, 10);
+    const math = parseInt($("math").value, 10);
+    const english = parseInt($("english").value, 10);
+
+    if (!examName || [korean, math, english].some(v => Number.isNaN(v))) {
+      alert("시험 이름/점수를 모두 입력해줘.");
+      return;
+    }
+
+    const total = korean + math + english;
+    scores.push({ examName, korean, math, english, total });
+    saveScores();
+
+    $("examName").value = "";
+    $("korean").value = "";
+    $("math").value = "";
+    $("english").value = "";
+
+    renderTable();
+    renderChart();
+  });
+
+  manageTab.addEventListener("click", () => {
+    if (currentGrade !== "의") return;
+    manageSection.classList.toggle("hidden");
+    renderUsers();
+    renderLoginRecords();
+  });
+
+  $("addUserBtn").addEventListener("click", () => {
+    if (currentGrade !== "의") return;
+    const pw = $("newPw").value.trim();
+    const grade = $("newGrade").value;
+    if (!pw) return alert("새 비밀번호를 입력해줘.");
+    users[pw] = grade;
+    saveUsers();
+    $("newPw").value = "";
+    renderUsers();
+    alert(`추가됨: 등급 ${grade}`);
+  });
+
+  $("clearLogsBtn").addEventListener("click", () => {
+    if (currentGrade !== "의") return;
+    localStorage.setItem(KEY_LOGS, "[]");
+    renderLoginRecords();
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    currentGrade = null;
+    // 화면 리셋
+    loginSection.classList.remove("hidden");
+    scoresSection.classList.add("hidden");
+    universitySection.classList.add("hidden");
+    info2026Section.classList.add("hidden");
+    materialsSection.classList.add("hidden");
+    manageSection.classList.add("hidden");
+    roleBadge.classList.add("hidden");
+    manageTab.classList.add("hidden");
+    logoutBtn.classList.add("hidden");
+    $("pwInput").value = "";
+  });
+
+  // 유틸
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+  function escapeAttr(str){
+    return String(str).replace(/['"\\\\]/g, "\\$&");
+  }
 </script>
 </body>
 </html>

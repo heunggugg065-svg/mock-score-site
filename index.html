@@ -6,7 +6,7 @@
   <title>ScoreBoard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body{font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; background:linear-gradient(135deg,#111827,#4f46e5); margin:0; padding:20px}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:linear-gradient(135deg,#111827,#4f46e5);margin:0;padding:20px}
     .container{max-width:1100px;margin:auto;background:#fff;padding:22px 22px 28px;border-radius:18px;box-shadow:0 15px 40px rgba(0,0,0,.25);position:relative}
     h1{margin:6px 0 12px;text-align:center}
     .top-right{position:absolute;top:14px;right:16px;display:flex;gap:10px;align-items:center}
@@ -15,23 +15,23 @@
     .section{margin-top:16px;padding:14px;border:1px solid #eef2ff;border-radius:14px;background:#fafbff}
     .section h3{margin:0 0 10px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input,select,button{padding:10px;margin:6px 0;box-sizing:border-box;border-radius:10px;border:1px solid #d1d5db}
+    input,select,button,textarea{padding:10px;margin:6px 0;box-sizing:border-box;border-radius:10px;border:1px solid #d1d5db}
     input,select{width:100%}
     .row > *{flex:1 1 180px}
-    button{background:#4f46e5;color:#fff;border:none;cursor:pointer;font-weight:700}
+    button{background:#4f46e5;color:#fff;border:none;cursor:pointer;font-weight:800}
     button:hover{background:#4338ca}
     .ghost{background:#111827}
     .ghost:hover{background:#0b1220}
     .danger{background:#dc2626}
     .danger:hover{background:#b91c1c}
-    .pill{display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px}
     .muted{color:#6b7280;font-size:12px}
     .hidden{display:none !important}
     .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     .grid4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     @media (max-width: 900px){.grid2,.grid4{grid-template-columns:1fr}}
     .card{background:#fff;border:1px solid #eee;border-radius:14px;padding:12px}
-    .card .t{font-weight:800;margin-bottom:4px}
+    .card .t{font-weight:900;margin-bottom:4px}
     .card .d{font-size:13px;color:#374151}
     canvas{margin-top:10px}
     .btnbar{display:flex;gap:8px;flex-wrap:wrap}
@@ -41,6 +41,20 @@
     th,td{border-bottom:1px solid #eee;padding:10px;text-align:center}
     th{background:#f3f4f6}
     .mini{font-size:12px}
+
+    /* 학년도 탭(크롬 탭 느낌) */
+    .year-tabs{display:flex;gap:8px;align-items:flex-end;margin:10px 0 0}
+    .year-tab{
+      border:1px solid #e5e7eb;background:#f3f4f6;color:#111827;
+      padding:8px 14px;border-bottom:none;border-top-left-radius:12px;border-top-right-radius:12px;
+      cursor:pointer;font-weight:900;
+    }
+    .year-tab.active{background:#fff;color:#4f46e5;border-color:#c7d2fe}
+    .year-tab.locked{opacity:.45;cursor:not-allowed}
+    .year-bar{border:1px solid #c7d2fe;border-radius:14px;background:#fff;padding:10px 12px;margin-top:-1px}
+
+    .ok{color:#059669;font-weight:800}
+    .warn{color:#b45309;font-weight:800}
   </style>
 </head>
 
@@ -59,9 +73,29 @@
       <h3>🔐 로그인</h3>
       <input id="pwInput" type="password" placeholder="비밀번호 입력" />
       <button id="loginBtn">로그인</button>
+      <div class="muted">※ 비밀번호는 화면/코드에 표시되지 않습니다.</div>
     </div>
 
-    <!-- 선택 UI -->
+    <!-- 학년도 탭 -->
+    <div id="yearWrap" class="hidden">
+      <div class="year-tabs">
+        <button id="tab2026" class="year-tab" type="button" data-year="2026">2026학년도</button>
+        <button id="tab2027" class="year-tab" type="button" data-year="2027">2027학년도</button>
+      </div>
+      <div class="year-bar">
+        <div class="row" style="align-items:center">
+          <div style="flex:1 1 260px">
+            <span class="pill">현재 학년도: <b id="currentYearLabel">2027</b></span>
+            <span class="pill">현재 등급: <b id="currentGradeLabel">-</b></span>
+          </div>
+          <div style="flex:2 1 520px" class="muted">
+            * 한/약/수는 2027학년도만 열람 가능합니다. (의/치는 2026/2027 모두 가능)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 선택 -->
     <div id="pickSection" class="section hidden">
       <h3>🧭 선택</h3>
 
@@ -91,29 +125,28 @@
         <input id="percentileInput" type="number" placeholder="백분위(선택)" min="0" max="100" />
         <button id="saveScoreBtn" type="button">저장/업데이트</button>
       </div>
-      <div class="muted">* (선택한 종류/과목/회차) 조합이 이미 있으면 업데이트, 없으면 새로 저장</div>
+      <div class="muted">* (학년도/종류/과목/회차) 조합이 이미 있으면 업데이트, 없으면 새로 저장</div>
     </div>
 
     <!-- 그래프 4개 -->
     <div id="chartsSection" class="section hidden">
       <h3>📈 그래프</h3>
-
       <div class="grid4">
         <div class="card">
-          <div class="t">그래프 1) 선택한 종류의 해당 과목 경향</div>
-          <div class="d mini">X축=회차, Y축=점수 (선택한 과목 1개만)</div>
+          <div class="t">그래프 1) 선택한 종류 · 과목의 회차별 경향</div>
+          <div class="d mini">X=회차, Y=점수</div>
           <canvas id="chart1"></canvas>
         </div>
 
         <div class="card">
-          <div class="t">그래프 2) 내 모든 시험에서 해당 과목 경향</div>
-          <div class="d mini">종류 상관없이 선택 과목만 모아서</div>
+          <div class="t">그래프 2) 전체 시험에서 해당 과목 경향</div>
+          <div class="d mini">종류 상관없이 같은 과목만</div>
           <canvas id="chart2"></canvas>
         </div>
 
         <div class="card">
-          <div class="t">그래프 3) 해당 시험에서 다른 사람들과 비교</div>
-          <div class="d mini">의가 입력한 평균/등급컷과 비교</div>
+          <div class="t">그래프 3) 해당 시험에서 비교(평균/등급컷)</div>
+          <div class="d mini">의가 입력한 평균/컷 기준</div>
           <canvas id="chart3"></canvas>
         </div>
 
@@ -125,17 +158,14 @@
       </div>
     </div>
 
-    <!-- 표(선택 조합 점수 + 통계/단원) -->
+    <!-- 상세 -->
     <div id="detailSection" class="section hidden">
       <h3>📌 선택 상세</h3>
-
       <div class="grid2">
         <div class="card">
           <div class="t">내 점수(선택 조합)</div>
           <div class="d">점수: <b id="myScoreLabel">-</b> / 백분위: <b id="myPctLabel">-</b></div>
-          <div class="muted">* (종류/과목/회차) 선택했을 때 표시</div>
         </div>
-
         <div class="card">
           <div class="t">시험 통계(다른사람 비교용)</div>
           <div class="d">평균: <b id="avgLabel">-</b></div>
@@ -150,6 +180,12 @@
           <tbody id="unitTable"></tbody>
         </table>
       </div>
+
+      <div class="section" style="background:#fff;margin-top:12px">
+        <h3 style="margin:0 0 8px">🎓 대학 추천</h3>
+        <div class="muted">* 선택 조합의 “내 백분위” 기준 (한 등급 이상 열람)</div>
+        <div id="univCards" class="grid2" style="margin-top:10px"></div>
+      </div>
     </div>
 
     <!-- 관리(의 전용) -->
@@ -157,7 +193,7 @@
       <h3>🛠 관리 (의 전용)</h3>
 
       <div class="section" style="background:#fff">
-        <h3 style="margin:0 0 8px">🧩 종류 관리</h3>
+        <h3 style="margin:0 0 8px">🧩 종류 관리(학년도별)</h3>
         <div class="row">
           <input id="newTypeInput" placeholder="새 종류 이름 (예: 학력평가, 서바이벌)" />
           <button id="addTypeBtn" class="ghost" type="button">종류 추가</button>
@@ -178,7 +214,7 @@
           </select>
           <button id="addUserBtn" class="ghost" type="button">추가</button>
         </div>
-        <div class="muted">* 의 등급은 관리에서 비밀번호 원문 확인 가능</div>
+        <div class="muted">* 의 등급은 점수/수정/관리 모두 가능</div>
         <div id="userList" style="margin-top:10px"></div>
       </div>
 
@@ -190,7 +226,7 @@
 
       <div class="section" style="background:#fff">
         <h3 style="margin:0 0 8px">📊 시험 통계 입력(그래프3)</h3>
-        <div class="muted">현재 선택(종류/과목/회차)에 대해 평균/등급컷을 저장</div>
+        <div class="muted">현재 선택(학년도/종류/과목/회차)에 대해 평균/등급컷 저장</div>
         <div class="row">
           <input id="statAvg" type="number" placeholder="평균(예: 78)" />
           <input id="cut1" type="number" placeholder="1등급컷(선택)" />
@@ -212,14 +248,27 @@
 
       <div class="section" style="background:#fff">
         <h3 style="margin:0 0 8px">🧩 단원 점수 입력(그래프4)</h3>
-        <div class="muted">현재 선택(종류/과목/회차)에 대해 단원 점수 추가</div>
+        <div class="muted">현재 선택(학년도/종류/과목/회차)에 단원 점수 추가</div>
         <div class="row">
           <input id="unitName" placeholder="단원명(예: 문학/비문학, 미적분-수열)" />
           <input id="unitScore" type="number" placeholder="점수" />
           <input id="unitMax" type="number" placeholder="만점(선택)" />
           <button id="addUnitBtn" class="ghost" type="button">단원 추가</button>
         </div>
-        <div class="muted">* 단원은 여러 개 쌓임(삭제 기능은 다음에 추가 가능)</div>
+      </div>
+
+      <div class="section" style="background:#fff">
+        <h3 style="margin:0 0 8px">🎓 대학 데이터 넣기(학년도별)</h3>
+        <div class="muted">형식: 백분위,대학,학과,메모(선택) — 한 줄에 하나</div>
+        <textarea id="univPaste" style="width:100%;height:140px;border-radius:12px;border:1px solid #d1d5db;padding:10px;margin-top:8px"
+          placeholder="예시
+96,서울대,컴퓨터공학,상향
+92,연세대,경영,적정
+88,중앙대,화학,안정"></textarea>
+        <div class="row">
+          <button id="importUnivBtn" class="ghost" type="button">저장하기</button>
+          <button id="clearUnivBtn" class="danger" type="button">전체삭제</button>
+        </div>
       </div>
     </div>
   </div>
@@ -227,118 +276,164 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
   import {
-    getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
+    getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
     onSnapshot, query, orderBy, serverTimestamp, getDocs, limit, where
   } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-  // ✅ 너 Firebase 값 (이미 너가 쓰던 그대로)
+  // ✅ 여기 firebaseConfig를 너 값으로 바꿔서 붙여넣기
   const firebaseConfig = {
-    apiKey: "AIzaSyCuMFRksmpH0TuNqv3YoMa76DAAN4r3B84",
-    authDomain: "scoreboard-d4bf9.firebaseapp.com",
-    projectId: "scoreboard-d4bf9",
-    storageBucket: "scoreboard-d4bf9.firebasestorage.app",
-    messagingSenderId: "272482248722",
-    appId: "1:272482248722:web:81147fe66081feb9da50cb",
-    measurementId: "G-VC1922P5SV"
-  };
+  apiKey: "AIzaSyCuMFRksmpH0TuNqv3YoMa76DAAN4r3B84",
+  authDomain: "scoreboard-d4bf9.firebaseapp.com",
+  projectId: "scoreboard-d4bf9",
+  storageBucket: "scoreboard-d4bf9.firebasestorage.app",
+  messagingSenderId: "272482248722",
+  appId: "1:272482248722:web:81147fe66081feb9da50cb",
+  measurementId: "G-VC1922P5SV"
+};
+
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
   // 컬렉션
-  const colTypes  = collection(db, "sb_types");
-  const colScores = collection(db, "sb_scores");      // 내 점수 (typeId, subject, round, score, percentile)
-  const colUsers  = collection(db, "sb_users");
-  const colLogs   = collection(db, "sb_logs");
-  const colStats  = collection(db, "sb_exam_stats");  // 다른사람 비교(평균/등급컷)
-  const colUnits  = collection(db, "sb_unit_scores"); // 단원별 점수
+  const colTypes  = collection(db, "sb_types");        // {year, name, createdAt}
+  const colScores = collection(db, "sb_scores");       // {year, typeId, subject, round, score, percentile, createdAt}
+  const colUsers  = collection(db, "sb_users");        // {password, grade, createdAt}
+  const colLogs   = collection(db, "sb_logs");         // {grade, time, createdAt}
+  const colStats  = collection(db, "sb_exam_stats");   // {year, typeId, subject, round, avg, cut1..cut9, createdAt}
+  const colUnits  = collection(db, "sb_unit_scores");  // {year, typeId, subject, round, unit, score, maxScore, createdAt}
+  const colUniv   = collection(db, "sb_univ_list");    // {year, minPercentile, university, major, note, createdAt}
 
-  // 등급
+  const SUBJECTS = ["국어","수학","영어","화학1","생명과학1","한국사"];
   const gradeHierarchy = { "의": 5, "치": 4, "한": 3, "약": 2, "수": 1 };
 
-  // 과목(고정)
-  const SUBJECTS = ["국어","수학","영어","화학1","생명과학1","한국사"];
+  // 권한(학년도)
+  function canViewYear(grade, year){
+    if (grade === "의" || grade === "치") return true;       // 의/치: 둘 다
+    if (grade === "한" || grade === "약" || grade === "수") return year === "2027"; // 한/약/수: 2027만
+    return false;
+  }
+  function isAdmin(){ return currentGrade === "의"; }
 
   // 상태
   let currentGrade = null;
+  let currentYear = "2027";
 
-  let types = [];   // {id,name}
-  let users = [];   // {id,password,grade}
-  let logs  = [];   // {id,grade,time}
-  let scores = [];  // {id,typeId,round,subject,score,percentile,createdAt}
-  let stats = [];   // {id,typeId,round,subject,avg,cut1..cut9}
-  let units = [];   // {id,typeId,round,subject,unit,score,maxScore}
+  let types = [];    // {id,year,name}
+  let scores = [];   // {id,year,typeId,subject,round,score,percentile}
+  let stats = [];    // {id,year,typeId,subject,round,avg,cut1..cut9}
+  let units = [];    // {id,year,typeId,subject,round,unit,score,maxScore}
+  let univList = []; // {id,year,minPercentile,university,major,note}
+  let users = [];
+  let logs = [];
 
-  // 선택 상태
+  // 선택
   let selectedTypeId = null;
-  let selectedSubject = null;
+  let selectedSubject = SUBJECTS[0];
   let selectedRound = null;
 
   // 차트
-  let c1=null, c2=null, c3=null, c4=null;
+  let c1=null,c2=null,c3=null,c4=null;
 
-  const $ = (id) => document.getElementById(id);
-  const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // 구독 해제용
+  let unsubs = [];
 
-  // ===== 권한 적용 =====
-  function applyPermissions() {
+  const $ = (id)=>document.getElementById(id);
+  const escapeHtml = (s)=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function setVisibleAfterLogin(){
     $("loginSection").classList.add("hidden");
+    $("yearWrap").classList.remove("hidden");
     $("pickSection").classList.remove("hidden");
     $("chartsSection").classList.remove("hidden");
     $("detailSection").classList.remove("hidden");
     $("logoutBtn").classList.remove("hidden");
 
+    $("manageTab").classList.toggle("hidden", !isAdmin());
+    $("scoreEditorSection").classList.toggle("hidden", !isAdmin());
+    $("manageSection").classList.add("hidden");
+
     $("roleBadge").classList.remove("hidden");
     $("roleBadge").textContent = `현재 등급: ${currentGrade}`;
 
-    const isAdmin = (currentGrade === "의");
-    $("manageTab").classList.toggle("hidden", !isAdmin);
-    $("scoreEditorSection").classList.toggle("hidden", !isAdmin);
+    $("currentGradeLabel").textContent = currentGrade;
+    applyYearTabs();
   }
 
-  // ===== 기본 관리자/기본 종류 생성 =====
-  
+  function applyYearTabs(){
+    $("currentYearLabel").textContent = currentYear;
 
-  async function logLogin(grade) {
-    await addDoc(colLogs, { grade, time: new Date().toLocaleString(), createdAt: serverTimestamp() });
+    // 탭 활성 표시
+    $("tab2026").classList.toggle("active", currentYear==="2026");
+    $("tab2027").classList.toggle("active", currentYear==="2027");
+
+    // 잠금 표시
+    const can26 = canViewYear(currentGrade,"2026");
+    const can27 = canViewYear(currentGrade,"2027");
+
+    $("tab2026").classList.toggle("locked", !can26);
+    $("tab2027").classList.toggle("locked", !can27);
   }
 
-  // ===== 타입 셀렉트 =====
-  function renderTypeSelect() {
-    const sel = $("typeSelect");
-    sel.innerHTML = "";
-    if (types.length === 0) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "종류 없음(의가 관리에서 추가)";
+  function destroyCharts(){
+    if(c1) c1.destroy(); if(c2) c2.destroy(); if(c3) c3.destroy(); if(c4) c4.destroy();
+    c1=c2=c3=c4=null;
+  }
+
+  function updatePickLabel(){
+    const typeName = types.find(t=>t.id===selectedTypeId)?.name ?? "-";
+    const rnd = (selectedRound==null) ? "-" : `${selectedRound}회`;
+    $("currentPick").textContent = `${currentYear} / ${typeName} / ${selectedSubject} / ${rnd}`;
+  }
+
+  function renderTypeSelect(){
+    const sel=$("typeSelect");
+    sel.innerHTML="";
+
+    if(types.length===0){
+      const opt=document.createElement("option");
+      opt.value="";
+      opt.textContent="종류 없음(의가 관리에서 추가)";
       sel.appendChild(opt);
-      sel.disabled = true;
+      sel.disabled=true;
+      selectedTypeId=null;
+      updatePickLabel();
+      renderRoundButtonsAuto();
+      updateDetail();
+      renderAllCharts();
       return;
     }
-    sel.disabled = false;
-    for (const t of types) {
-      const opt = document.createElement("option");
-      opt.value = t.id;
-      opt.textContent = t.name;
+    sel.disabled=false;
+    types.forEach(t=>{
+      const opt=document.createElement("option");
+      opt.value=t.id;
+      opt.textContent=t.name;
       sel.appendChild(opt);
+    });
+
+    if(!selectedTypeId || !types.some(t=>t.id===selectedTypeId)){
+      selectedTypeId = sel.value;
+    }else{
+      sel.value = selectedTypeId;
     }
 
-    // 첫 타입 자동 선택
-    if (!selectedTypeId) selectedTypeId = sel.value;
+    updatePickLabel();
+    renderRoundButtonsAuto();
+    updateDetail();
+    renderAllCharts();
   }
 
-  // ===== 과목 버튼 =====
-  function renderSubjectButtons() {
-    const wrap = $("subjectButtons");
-    wrap.innerHTML = "";
-    SUBJECTS.forEach(subj => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "ghost";
-      btn.textContent = subj;
-      btn.onclick = () => {
-        selectedSubject = subj;
-        selectedRound = null;
+  function renderSubjectButtons(){
+    const wrap=$("subjectButtons");
+    wrap.innerHTML="";
+    SUBJECTS.forEach(subj=>{
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.className="ghost";
+      btn.textContent=subj;
+      btn.onclick=()=>{
+        selectedSubject=subj;
+        selectedRound=null;
         markActiveButtons();
         renderRoundButtonsAuto();
         updatePickLabel();
@@ -347,53 +442,53 @@
       };
       wrap.appendChild(btn);
     });
-
-    if (!selectedSubject) {
-      selectedSubject = SUBJECTS[0];
-    }
     markActiveButtons();
   }
 
-  function markActiveButtons() {
+  function markActiveButtons(){
     [...$("subjectButtons").querySelectorAll("button")].forEach(b=>{
-      b.classList.toggle("active", b.textContent === selectedSubject);
+      b.classList.toggle("active", b.textContent===selectedSubject);
     });
     [...$("roundButtons").querySelectorAll("button")].forEach(b=>{
-      const r = Number(b.dataset.round);
-      b.classList.toggle("active", Number.isFinite(r) && r === selectedRound);
+      const r=Number(b.dataset.round);
+      b.classList.toggle("active", Number.isFinite(r) && r===selectedRound);
     });
   }
 
-  // ===== 자동 회차 버튼 =====
-  function renderRoundButtonsAuto() {
-    const wrap = $("roundButtons");
-    wrap.innerHTML = "";
+  function renderRoundButtonsAuto(){
+    const wrap=$("roundButtons");
+    wrap.innerHTML="";
 
-    if (!selectedTypeId || !selectedSubject) {
-      wrap.innerHTML = `<span class="muted">종류/과목을 먼저 선택해줘</span>`;
+    if(!selectedTypeId || !selectedSubject){
+      wrap.innerHTML=`<span class="muted">종류/과목을 먼저 선택해줘</span>`;
       return;
     }
 
-    const rounds = [...new Set(
+    const rounds=[...new Set(
       scores
-        .filter(s => s.typeId === selectedTypeId && s.subject === selectedSubject)
-        .map(s => Number(s.round))
-        .filter(r => Number.isFinite(r))
+        .filter(s=>s.typeId===selectedTypeId && s.subject===selectedSubject)
+        .map(s=>Number(s.round))
+        .filter(r=>Number.isFinite(r))
     )].sort((a,b)=>a-b);
 
-    if (rounds.length === 0) {
-      wrap.innerHTML = `<span class="muted">아직 저장된 회차가 없어 (의가 점수 저장하면 자동 생성)</span>`;
+    if(rounds.length===0){
+      wrap.innerHTML=`<span class="muted">저장된 회차 없음(의가 점수 저장하면 자동 생성)</span>`;
+      selectedRound=null;
+      markActiveButtons();
+      updatePickLabel();
+      updateDetail();
+      renderAllCharts();
       return;
     }
 
     rounds.forEach(r=>{
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "ghost";
-      btn.textContent = `${r}회`;
-      btn.dataset.round = String(r);
-      btn.onclick = () => {
-        selectedRound = r;
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.className="ghost";
+      btn.textContent=`${r}회`;
+      btn.dataset.round=String(r);
+      btn.onclick=()=>{
+        selectedRound=r;
         markActiveButtons();
         updatePickLabel();
         updateDetail();
@@ -402,158 +497,126 @@
       wrap.appendChild(btn);
     });
 
-    // 기본으로 첫 회차 자동 선택(없으면 null)
-    if (selectedRound == null && rounds.length) selectedRound = rounds[0];
+    if(selectedRound==null) selectedRound=rounds[0];
     markActiveButtons();
   }
 
-  function updatePickLabel() {
-    const typeName = types.find(t=>t.id===selectedTypeId)?.name ?? "-";
-    const subj = selectedSubject ?? "-";
-    const rnd = (selectedRound==null) ? "-" : `${selectedRound}회`;
-    $("currentPick").textContent = `${typeName} / ${subj} / ${rnd}`;
+  function getMyScoreDoc(){
+    if(!selectedTypeId || !selectedSubject || selectedRound==null) return null;
+    return scores.find(s=>s.typeId===selectedTypeId && s.subject===selectedSubject && Number(s.round)===Number(selectedRound)) ?? null;
   }
-
-  // ===== 내 점수/통계/단원 상세 =====
-  function getMyScoreDoc() {
-    if (!selectedTypeId || !selectedSubject || selectedRound==null) return null;
-    return scores.find(s => s.typeId===selectedTypeId && s.subject===selectedSubject && Number(s.round)===Number(selectedRound)) ?? null;
+  function getStatDoc(){
+    if(!selectedTypeId || !selectedSubject || selectedRound==null) return null;
+    return stats.find(s=>s.typeId===selectedTypeId && s.subject===selectedSubject && Number(s.round)===Number(selectedRound)) ?? null;
   }
-
-  function getStatDoc() {
-    if (!selectedTypeId || !selectedSubject || selectedRound==null) return null;
-    return stats.find(s => s.typeId===selectedTypeId && s.subject===selectedSubject && Number(s.round)===Number(selectedRound)) ?? null;
-  }
-
-  function getUnitDocs() {
-    if (!selectedTypeId || !selectedSubject || selectedRound==null) return [];
+  function getUnitDocs(){
+    if(!selectedTypeId || !selectedSubject || selectedRound==null) return [];
     return units
-      .filter(u => u.typeId===selectedTypeId && u.subject===selectedSubject && Number(u.round)===Number(selectedRound))
+      .filter(u=>u.typeId===selectedTypeId && u.subject===selectedSubject && Number(u.round)===Number(selectedRound))
       .slice()
-      .sort((a,b)=> (a.unit||"").localeCompare(b.unit||"", "ko"));
+      .sort((a,b)=>(a.unit||"").localeCompare(b.unit||"", "ko"));
   }
 
-  function updateDetail() {
-    const my = getMyScoreDoc();
-    $("myScoreLabel").textContent = my ? String(my.score) : "-";
-    $("myPctLabel").textContent = (my && my.percentile!=null) ? String(my.percentile) : "-";
+  function updateDetail(){
+    const my=getMyScoreDoc();
+    $("myScoreLabel").textContent=my?String(my.score):"-";
+    $("myPctLabel").textContent=(my && my.percentile!=null)?String(my.percentile):"-";
 
-    const st = getStatDoc();
-    $("avgLabel").textContent = st && st.avg!=null ? String(st.avg) : "-";
+    const st=getStatDoc();
+    $("avgLabel").textContent=(st && st.avg!=null)?String(st.avg):"-";
 
-    const ud = getUnitDocs();
-    const tb = $("unitTable");
-    tb.innerHTML = "";
-    if (ud.length === 0) {
-      tb.innerHTML = `<tr><td colspan="3" class="muted">단원 데이터 없음(의가 관리에서 추가)</td></tr>`;
-    } else {
+    // 단원표
+    const ud=getUnitDocs();
+    const tb=$("unitTable");
+    tb.innerHTML="";
+    if(ud.length===0){
+      tb.innerHTML=`<tr><td colspan="3" class="muted">단원 데이터 없음(의가 관리에서 추가)</td></tr>`;
+    }else{
       ud.forEach(x=>{
         tb.innerHTML += `<tr><td>${escapeHtml(x.unit)}</td><td>${x.score ?? "-"}</td><td>${x.maxScore ?? "-"}</td></tr>`;
       });
     }
+
+    renderUniversityCards();
   }
 
-  // ===== 차트 렌더 =====
-  function destroyCharts() {
-    if (c1) c1.destroy(); if (c2) c2.destroy(); if (c3) c3.destroy(); if (c4) c4.destroy();
-    c1=c2=c3=c4=null;
-  }
-
-  function renderChart1() {
-    // 선택한 종류+과목의 회차별 추이
-    const rows = scores
-      .filter(s => s.typeId===selectedTypeId && s.subject===selectedSubject)
-      .map(s => ({ r:Number(s.round), v:Number(s.score) }))
-      .filter(x => Number.isFinite(x.r) && Number.isFinite(x.v))
+  function renderChart1(){
+    const rows=scores
+      .filter(s=>s.typeId===selectedTypeId && s.subject===selectedSubject)
+      .map(s=>({r:Number(s.round), v:Number(s.score)}))
+      .filter(x=>Number.isFinite(x.r) && Number.isFinite(x.v))
       .sort((a,b)=>a.r-b.r);
 
-    const labels = rows.map(x=>`${x.r}회`);
-    const values = rows.map(x=>x.v);
+    const labels=rows.map(x=>`${x.r}회`);
+    const values=rows.map(x=>x.v);
 
-    const ctx = $("chart1").getContext("2d");
-    c1 = new Chart(ctx, {
+    c1=new Chart($("chart1").getContext("2d"),{
       type:"line",
-      data:{ labels, datasets:[{ label:`${selectedSubject} 점수`, data:values, fill:false }] },
-      options:{ responsive:true, scales:{ y:{ beginAtZero:true } } }
+      data:{labels,datasets:[{label:`${selectedSubject} 점수`,data:values,fill:false}]},
+      options:{responsive:true,scales:{y:{beginAtZero:true}}}
     });
   }
 
-  function renderChart2() {
-    // 내 모든 시험에서 선택 과목만 모아서 추이(종류 상관없음)
-    const rows = scores
-      .filter(s => s.subject===selectedSubject)
+  function renderChart2(){
+    const rows=scores
+      .filter(s=>s.subject===selectedSubject)
       .slice()
       .sort((a,b)=>{
-        const ta = a.createdAt?.seconds ?? 0;
-        const tb = b.createdAt?.seconds ?? 0;
-        return ta - tb;
+        const ta=a.createdAt?.seconds??0;
+        const tb=b.createdAt?.seconds??0;
+        return ta-tb;
       });
 
-    const labels = rows.map(s=>{
-      const tn = types.find(t=>t.id===s.typeId)?.name ?? "?";
+    const labels=rows.map(s=>{
+      const tn=types.find(t=>t.id===s.typeId)?.name ?? "?";
       return `${tn} ${s.round}회`;
     });
-    const values = rows.map(s=>Number(s.score));
+    const values=rows.map(s=>Number(s.score));
 
-    const ctx = $("chart2").getContext("2d");
-    c2 = new Chart(ctx, {
+    c2=new Chart($("chart2").getContext("2d"),{
       type:"line",
-      data:{ labels, datasets:[{ label:`전체 ${selectedSubject} 추이`, data:values, fill:false }] },
-      options:{ responsive:true, scales:{ y:{ beginAtZero:true } } }
+      data:{labels,datasets:[{label:`전체 ${selectedSubject} 추이`,data:values,fill:false}]},
+      options:{responsive:true,scales:{y:{beginAtZero:true}}}
     });
   }
 
-  function renderChart3() {
-    // 해당 시험(종류+과목+회차)에서 평균/등급컷과 비교
-    const my = getMyScoreDoc();
-    const st = getStatDoc();
+  function renderChart3(){
+    const my=getMyScoreDoc();
+    const st=getStatDoc();
 
-    const myScore = my ? Number(my.score) : null;
-    const avg = st && st.avg!=null ? Number(st.avg) : null;
+    const myScore=my?Number(my.score):null;
+    const avg=(st && st.avg!=null)?Number(st.avg):null;
 
-    // 표시할 막대: 내 점수, 평균(있으면)
-    const labels = [];
-    const values = [];
-    if (myScore!=null && Number.isFinite(myScore)) { labels.push("내 점수"); values.push(myScore); }
-    if (avg!=null && Number.isFinite(avg)) { labels.push("평균"); values.push(avg); }
+    const labels=[];
+    const values=[];
+    if(myScore!=null && Number.isFinite(myScore)){labels.push("내 점수");values.push(myScore);}
+    if(avg!=null && Number.isFinite(avg)){labels.push("평균");values.push(avg);}
 
-    const ctx = $("chart3").getContext("2d");
-
-    // 등급컷(있으면 선으로 표시)
-    const cuts = [];
-    if (st) {
-      for (let i=1;i<=9;i++){
-        const v = st[`cut${i}`];
-        if (v!=null && v!=="" && Number.isFinite(Number(v))) cuts.push({ grade:i, value:Number(v) });
+    const cuts=[];
+    if(st){
+      for(let i=1;i<=9;i++){
+        const v=st[`cut${i}`];
+        if(v!=null && v!=="" && Number.isFinite(Number(v))) cuts.push({grade:i,value:Number(v)});
       }
     }
 
-    c3 = new Chart(ctx, {
+    c3=new Chart($("chart3").getContext("2d"),{
       type:"bar",
-      data:{ labels, datasets:[{ label:`${selectedSubject} 비교`, data:values }] },
-      options:{
-        responsive:true,
-        scales:{ y:{ beginAtZero:true } },
-        plugins:{
-          legend:{ display:true }
-        }
-      },
-      plugins: [{
+      data:{labels,datasets:[{label:`${selectedSubject} 비교`,data:values}]},
+      options:{responsive:true,scales:{y:{beginAtZero:true}}},
+      plugins:[{
         id:"cutLines",
         afterDatasetsDraw(chart){
-          const {ctx, chartArea:{left,right,top,bottom}, scales:{y}} = chart;
+          const {ctx,chartArea:{left,right},scales:{y}}=chart;
           ctx.save();
           ctx.setLineDash([6,6]);
-          ctx.lineWidth = 1;
+          ctx.lineWidth=1;
           cuts.forEach(c=>{
-            const yPos = y.getPixelForValue(c.value);
-            ctx.beginPath();
-            ctx.moveTo(left, yPos);
-            ctx.lineTo(right, yPos);
-            ctx.stroke();
+            const yPos=y.getPixelForValue(c.value);
+            ctx.beginPath(); ctx.moveTo(left,yPos); ctx.lineTo(right,yPos); ctx.stroke();
             ctx.setLineDash([]);
-            ctx.fillStyle = "#374151";
-            ctx.font = "12px system-ui";
+            ctx.fillStyle="#374151";
+            ctx.font="12px system-ui";
             ctx.fillText(`${c.grade}컷 ${c.value}`, left+6, yPos-4);
             ctx.setLineDash([6,6]);
           });
@@ -563,50 +626,44 @@
     });
   }
 
-  function renderChart4() {
-    // 단원별 점수 비교(해당 시험)
-    const ud = getUnitDocs();
-    const labels = ud.map(x=>x.unit);
-    const values = ud.map(x=>Number(x.score));
+  function renderChart4(){
+    const ud=getUnitDocs();
+    const labels=ud.map(x=>x.unit);
+    const values=ud.map(x=>Number(x.score));
 
-    const ctx = $("chart4").getContext("2d");
-    c4 = new Chart(ctx, {
+    c4=new Chart($("chart4").getContext("2d"),{
       type:"bar",
-      data:{ labels, datasets:[{ label:`단원별 ${selectedSubject}`, data:values }] },
-      options:{ responsive:true, scales:{ y:{ beginAtZero:true } } }
+      data:{labels,datasets:[{label:`단원별 ${selectedSubject}`,data:values}]},
+      options:{responsive:true,scales:{y:{beginAtZero:true}}}
     });
   }
 
-  function renderAllCharts() {
-    if (!selectedTypeId || !selectedSubject) return;
+  function renderAllCharts(){
+    if(!selectedSubject) return;
     destroyCharts();
-    // 회차 선택 없어도 1/2는 그릴 수 있지만, 3/4는 회차 필요
+    // type 없으면 1/3/4는 비어도 그리기 가능하지만, 그냥 안전 처리
+    if(types.length===0) return;
     renderChart1();
     renderChart2();
     renderChart3();
     renderChart4();
   }
 
-  // ===== 점수 저장/업데이트 (의 전용) =====
-  async function upsertMyScore() {
-    if (currentGrade !== "의") return;
-    if (!selectedTypeId || !selectedSubject || selectedRound==null) {
-      alert("종류/과목/회차를 먼저 선택해줘.");
-      return;
-    }
+  async function upsertMyScore(){
+    if(!isAdmin()) return;
+    if(!selectedTypeId || !selectedSubject || selectedRound==null) return alert("종류/과목/회차를 먼저 선택해줘.");
+    const score=parseInt($("scoreInput").value,10);
+    if(Number.isNaN(score)) return alert("점수를 숫자로 입력해줘.");
 
-    const score = parseInt($("scoreInput").value, 10);
-    if (Number.isNaN(score)) return alert("점수를 숫자로 입력해줘.");
+    const pctRaw=$("percentileInput").value.trim();
+    const percentile=(pctRaw==="")?null:parseInt(pctRaw,10);
 
-    const pctRaw = $("percentileInput").value.trim();
-    const percentile = pctRaw === "" ? null : parseInt(pctRaw, 10);
-
-    // 동일 조합(종류+과목+회차) 문서 있으면 update, 없으면 add
-    const existing = getMyScoreDoc();
-    if (existing) {
-      await updateDoc(doc(db, "sb_scores", existing.id), { score, percentile });
-    } else {
-      await addDoc(colScores, {
+    const existing=getMyScoreDoc();
+    if(existing){
+      await updateDoc(doc(db,"sb_scores",existing.id),{score,percentile});
+    }else{
+      await addDoc(colScores,{
+        year: currentYear,
         typeId: selectedTypeId,
         subject: selectedSubject,
         round: Number(selectedRound),
@@ -615,41 +672,78 @@
         createdAt: serverTimestamp()
       });
     }
-
-    $("scoreInput").value = "";
-    $("percentileInput").value = "";
+    $("scoreInput").value="";
+    $("percentileInput").value="";
   }
 
-  // ===== 관리: 종류/유저/로그 =====
-  function renderTypeList() {
-    if (currentGrade !== "의") return;
-    const wrap = $("typeList");
-    if (types.length === 0) {
-      wrap.textContent = "등록된 종류 없음";
+  async function logLogin(grade){
+    await addDoc(colLogs,{grade,time:new Date().toLocaleString(),createdAt:serverTimestamp()});
+  }
+
+  // 대학 카드 (한 이상만 표시)
+  function renderUniversityCards(){
+    const box=$("univCards");
+    if(!box) return;
+
+    if(!currentGrade || gradeHierarchy[currentGrade] < gradeHierarchy["한"]){
+      box.innerHTML = `<div class="muted">한 등급 이상부터 대학 추천을 볼 수 있어요.</div>`;
       return;
     }
-    wrap.innerHTML = types.map(t => `
-      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;margin:6px 0;">
-        <div>• <b>${escapeHtml(t.name)}</b></div>
-        <button class="danger" type="button" onclick="deleteType('${t.id}')">삭제</button>
+
+    const my=getMyScoreDoc();
+    const myPct=my?.percentile;
+    if(myPct==null || !Number.isFinite(Number(myPct))){
+      box.innerHTML = `<div class="muted">내 백분위를 저장하면 추천이 떠요.</div>`;
+      return;
+    }
+
+    const pct=Number(myPct);
+    const matched = univList
+      .filter(u=>Number(u.minPercentile) <= pct)
+      .sort((a,b)=>Number(b.minPercentile)-Number(a.minPercentile))
+      .slice(0,12);
+
+    if(matched.length===0){
+      box.innerHTML = `<div class="muted">현재 백분위(${pct})로 추천할 데이터가 없어요. (의가 대학 데이터 추가 필요)</div>`;
+      return;
+    }
+
+    box.innerHTML = matched.map(u=>`
+      <div class="card">
+        <div class="t">${escapeHtml(u.university)}${u.major?` · ${escapeHtml(u.major)}`:""}</div>
+        <div class="d">필요 백분위 ≥ <b>${u.minPercentile}</b></div>
+        ${u.note?`<div class="muted" style="margin-top:6px">${escapeHtml(u.note)}</div>`:""}
       </div>
     `).join("");
   }
 
-  window.deleteType = async (typeId) => {
-    if (currentGrade !== "의") return;
-    const hasScore = scores.some(s => s.typeId === typeId);
-    if (hasScore) return alert("이 종류 점수가 있어서 삭제 불가(점수 먼저 삭제해야 함)");
-    await deleteDoc(doc(db, "sb_types", typeId));
+  // 관리: 종류 목록
+  function renderTypeList(){
+    if(!isAdmin()) return;
+    const wrap=$("typeList");
+    if(types.length===0){wrap.textContent="등록된 종류 없음";return;}
+    wrap.innerHTML = types.map(t=>`
+      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;margin:6px 0;">
+        <div>• <b>${escapeHtml(t.name)}</b> <span class="muted">(${t.year})</span></div>
+        <button class="danger" type="button" onclick="deleteType('${t.id}')">삭제</button>
+      </div>
+    `).join("");
+  }
+  window.deleteType = async (typeId)=>{
+    if(!isAdmin()) return;
+    const hasScore = scores.some(s=>s.typeId===typeId);
+    if(hasScore) return alert("이 종류 점수가 있어서 삭제 불가(점수 먼저 삭제해야 함)");
+    await deleteDoc(doc(db,"sb_types",typeId));
   };
 
-  function renderUsers() {
-    if (currentGrade !== "의") return;
-    const wrap = $("userList");
-    wrap.innerHTML = "";
+  // 관리: 유저 목록(의만 비번 원문 확인 가능)
+  function renderUsers(){
+    if(!isAdmin()) return;
+    const wrap=$("userList");
+    wrap.innerHTML="";
     users.forEach(u=>{
-      const div = document.createElement("div");
-      div.className = "card";
+      const div=document.createElement("div");
+      div.className="card";
       div.innerHTML = `
         <div class="t">비밀번호: <b>${escapeHtml(u.password)}</b></div>
         <div class="d">등급: <b>${escapeHtml(u.grade)}</b></div>
@@ -658,133 +752,173 @@
       wrap.appendChild(div);
     });
   }
-
-  window.removeUser = async (id) => {
-    if (currentGrade !== "의") return;
-    const u = users.find(x=>x.id===id);
-    if (!u) return;
-    if (u.password === "0704160931") return alert("기본 의 비번은 삭제하지 않는 걸 추천해.");
-    await deleteDoc(doc(db, "sb_users", id));
+  window.removeUser = async (id)=>{
+    if(!isAdmin()) return;
+    await deleteDoc(doc(db,"sb_users",id));
   };
 
-  function renderLogs() {
-    if (currentGrade !== "의") return;
-    const box = $("loginRecords");
-    if (logs.length === 0) return box.textContent = "기록 없음";
+  function renderLogs(){
+    if(!isAdmin()) return;
+    const box=$("loginRecords");
+    if(logs.length===0){box.textContent="기록 없음";return;}
     box.innerHTML = logs.slice().reverse().map(l=>`• [${escapeHtml(l.time)}] 등급: ${escapeHtml(l.grade)}`).join("<br/>");
   }
 
-  // ===== 관리: 통계 저장/업데이트 (그래프3 데이터) =====
-  async function upsertStats() {
-    if (currentGrade !== "의") return;
-    if (!selectedTypeId || !selectedSubject || selectedRound==null) {
-      alert("종류/과목/회차를 먼저 선택해줘.");
-      return;
-    }
+  async function upsertStats(){
+    if(!isAdmin()) return;
+    if(!selectedTypeId || !selectedSubject || selectedRound==null) return alert("종류/과목/회차를 먼저 선택해줘.");
 
-    const avg = $("statAvg").value.trim()==="" ? null : Number($("statAvg").value);
-    const data = {
+    const avgRaw=$("statAvg").value.trim();
+    const avg=(avgRaw==="")?null:Number(avgRaw);
+
+    const data={
+      year: currentYear,
       typeId: selectedTypeId,
       subject: selectedSubject,
       round: Number(selectedRound),
-      avg: (avg==null || Number.isNaN(avg)) ? null : avg,
+      avg: (avg==null||Number.isNaN(avg))?null:avg,
       createdAt: serverTimestamp()
     };
 
-    for (let i=1;i<=9;i++){
-      const v = $(`cut${i}`).value.trim();
-      data[`cut${i}`] = v==="" ? null : Number(v);
-      if (Number.isNaN(data[`cut${i}`])) data[`cut${i}`] = null;
+    for(let i=1;i<=9;i++){
+      const v=$(`cut${i}`).value.trim();
+      data[`cut${i}`] = (v==="")?null:Number(v);
+      if(Number.isNaN(data[`cut${i}`])) data[`cut${i}`]=null;
     }
 
-    const existing = getStatDoc();
-    if (existing) {
-      await updateDoc(doc(db, "sb_exam_stats", existing.id), data);
-    } else {
-      await addDoc(colStats, data);
+    const existing=getStatDoc();
+    if(existing){
+      await updateDoc(doc(db,"sb_exam_stats",existing.id),data);
+    }else{
+      await addDoc(colStats,data);
     }
   }
 
-  // ===== 관리: 단원 추가 (그래프4 데이터) =====
-  async function addUnit() {
-    if (currentGrade !== "의") return;
-    if (!selectedTypeId || !selectedSubject || selectedRound==null) {
-      alert("종류/과목/회차를 먼저 선택해줘.");
-      return;
-    }
+  async function addUnit(){
+    if(!isAdmin()) return;
+    if(!selectedTypeId || !selectedSubject || selectedRound==null) return alert("종류/과목/회차를 먼저 선택해줘.");
 
-    const unit = $("unitName").value.trim();
-    const score = $("unitScore").value.trim()==="" ? null : Number($("unitScore").value);
-    const maxScore = $("unitMax").value.trim()==="" ? null : Number($("unitMax").value);
+    const unit=$("unitName").value.trim();
+    const scoreRaw=$("unitScore").value.trim();
+    const maxRaw=$("unitMax").value.trim();
 
-    if (!unit) return alert("단원명을 입력해줘.");
-    if (score==null || Number.isNaN(score)) return alert("단원 점수를 숫자로 입력해줘.");
+    if(!unit) return alert("단원명을 입력해줘.");
+    const score=Number(scoreRaw);
+    if(!Number.isFinite(score)) return alert("단원 점수를 숫자로 입력해줘.");
 
-    await addDoc(colUnits, {
-      typeId: selectedTypeId,
-      subject: selectedSubject,
-      round: Number(selectedRound),
+    const maxScore=(maxRaw==="")?null:Number(maxRaw);
+    await addDoc(colUnits,{
+      year: currentYear,
+      typeId:selectedTypeId,
+      subject:selectedSubject,
+      round:Number(selectedRound),
       unit,
       score,
-      maxScore: (maxScore==null || Number.isNaN(maxScore)) ? null : maxScore,
+      maxScore:(maxScore!=null && Number.isFinite(maxScore))?maxScore:null,
       createdAt: serverTimestamp()
     });
 
-    $("unitName").value = "";
-    $("unitScore").value = "";
-    $("unitMax").value = "";
+    $("unitName").value="";
+    $("unitScore").value="";
+    $("unitMax").value="";
   }
 
-  // ===== 실시간 구독 =====
-  function startRealtime() {
-    onSnapshot(query(colTypes, orderBy("createdAt","asc")), (snap)=>{
+  async function importUniv(){
+    if(!isAdmin()) return;
+    const text=$("univPaste").value.trim();
+    if(!text) return alert("붙여넣을 데이터가 없어.");
+
+    const lines=text.split("\n").map(l=>l.trim()).filter(Boolean);
+    for(const line of lines){
+      const parts=line.split(",").map(x=>x.trim());
+      if(parts.length<2) continue;
+
+      const minPercentile=Number(parts[0]);
+      const university=parts[1]??"";
+      const major=parts[2]??"";
+      const note=parts[3]??"";
+
+      if(!Number.isFinite(minPercentile) || !university) continue;
+
+      await addDoc(colUniv,{
+        year: currentYear,
+        minPercentile,
+        university,
+        major,
+        note,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    $("univPaste").value="";
+    alert("대학 데이터 저장 완료!");
+  }
+
+  async function clearUniv(){
+    if(!isAdmin()) return;
+    const snap=await getDocs(query(colUniv, where("year","==",currentYear)));
+    await Promise.all(snap.docs.map(d=>deleteDoc(doc(db,"sb_univ_list",d.id))));
+  }
+
+  // ====== 실시간 구독(학년도 바뀌면 재구독) ======
+  function stopRealtime(){
+    unsubs.forEach(fn=>{ try{fn();}catch{} });
+    unsubs=[];
+  }
+
+  function startRealtimeForYear(year){
+    stopRealtime();
+    currentYear = year;
+    applyYearTabs();
+
+    // types (year)
+    unsubs.push(onSnapshot(query(colTypes, where("year","==",currentYear), orderBy("createdAt","asc")), snap=>{
       types = snap.docs.map(d=>({id:d.id, ...d.data()}));
       renderTypeSelect();
+      if(isAdmin()) renderTypeList();
+    }));
 
-      // selectedTypeId 유지/갱신
-      const sel = $("typeSelect");
-      if (!selectedTypeId && sel.value) selectedTypeId = sel.value;
-      if (selectedTypeId && !types.some(t=>t.id===selectedTypeId)) selectedTypeId = sel.value;
-
-      updatePickLabel();
-      renderRoundButtonsAuto();
-      updateDetail();
-      renderAllCharts();
-
-      if (currentGrade==="의") renderTypeList();
-    });
-
-    onSnapshot(query(colScores, orderBy("createdAt","asc")), (snap)=>{
+    // scores (year)
+    unsubs.push(onSnapshot(query(colScores, where("year","==",currentYear), orderBy("createdAt","asc")), snap=>{
       scores = snap.docs.map(d=>({id:d.id, ...d.data()}));
       renderRoundButtonsAuto();
+      updatePickLabel();
       updateDetail();
       renderAllCharts();
-    });
+    }));
 
-    onSnapshot(query(colUsers, orderBy("createdAt","asc")), (snap)=>{
-      users = snap.docs.map(d=>({id:d.id, ...d.data()}));
-      if (currentGrade==="의") renderUsers();
-    });
-
-    onSnapshot(query(colLogs, orderBy("createdAt","asc")), (snap)=>{
-      logs = snap.docs.map(d=>({id:d.id, ...d.data()}));
-      if (currentGrade==="의") renderLogs();
-    });
-
-    onSnapshot(query(colStats, orderBy("createdAt","asc")), (snap)=>{
+    // stats (year)
+    unsubs.push(onSnapshot(query(colStats, where("year","==",currentYear), orderBy("createdAt","asc")), snap=>{
       stats = snap.docs.map(d=>({id:d.id, ...d.data()}));
       updateDetail();
       renderAllCharts();
-    });
+    }));
 
-    onSnapshot(query(colUnits, orderBy("createdAt","asc")), (snap)=>{
+    // units (year)
+    unsubs.push(onSnapshot(query(colUnits, where("year","==",currentYear), orderBy("createdAt","asc")), snap=>{
       units = snap.docs.map(d=>({id:d.id, ...d.data()}));
       updateDetail();
       renderAllCharts();
-    });
+    }));
+
+    // univ (year)
+    unsubs.push(onSnapshot(query(colUniv, where("year","==",currentYear), orderBy("minPercentile","desc")), snap=>{
+      univList = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      renderUniversityCards();
+    }));
+
+    // users/logs는 학년도 무관(전체)
+    unsubs.push(onSnapshot(query(colUsers, orderBy("createdAt","asc")), snap=>{
+      users = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      if(isAdmin()) renderUsers();
+    }));
+    unsubs.push(onSnapshot(query(colLogs, orderBy("createdAt","asc")), snap=>{
+      logs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      if(isAdmin()) renderLogs();
+    }));
   }
 
-  // ===== 이벤트 =====
+  // ====== 이벤트 ======
   $("typeSelect").addEventListener("change", ()=>{
     selectedTypeId = $("typeSelect").value;
     selectedRound = null;
@@ -794,33 +928,36 @@
     renderAllCharts();
   });
 
+  $("saveScoreBtn").addEventListener("click", upsertMyScore);
+
   $("loginBtn").addEventListener("click", async ()=>{
     const entered = $("pwInput").value.trim();
-    if (!entered) return alert("비밀번호를 입력해줘.");
+    if(!entered) return alert("비밀번호를 입력해줘.");
 
-    await ensureDefaultAdminIfNeeded(entered);
-
+    // users에서 찾기
     const snap = await getDocs(colUsers);
     const list = snap.docs.map(d=>({id:d.id, ...d.data()}));
-    const found = list.find(u=>u.password===entered);
-    if (!found) return alert("비밀번호가 틀렸습니다.");
+    const found = list.find(u=>u.password === entered);
+    if(!found) return alert("비밀번호가 틀렸습니다.");
 
     currentGrade = found.grade;
     await logLogin(currentGrade);
 
-    applyPermissions();
+    setVisibleAfterLogin();
     renderSubjectButtons();
     updatePickLabel();
-    startRealtime();
+
+    // 로그인 후 기본 년도 선택 로직:
+    // - 한/약/수는 2026 불가이므로 2027로 강제
+    // - 의/치는 최근 사용 목적상 기본 2027로 시작
+    const startYear = canViewYear(currentGrade,"2027") ? "2027" : "2026";
+    startRealtimeForYear(startYear);
   });
 
-  $("logoutBtn").addEventListener("click", ()=>{
-    // 간단 로그아웃(새로고침)
-    location.reload();
-  });
+  $("logoutBtn").addEventListener("click", ()=>location.reload());
 
   $("manageTab").addEventListener("click", ()=>{
-    if (currentGrade!=="의") return;
+    if(!isAdmin()) return;
     $("manageSection").classList.toggle("hidden");
     renderTypeList();
     renderUsers();
@@ -829,35 +966,52 @@
   });
 
   $("addTypeBtn").addEventListener("click", async ()=>{
-    if (currentGrade!=="의") return;
+    if(!isAdmin()) return;
     const name = $("newTypeInput").value.trim();
-    if (!name) return alert("종류 이름을 입력해줘.");
-    if (types.some(t=>t.name===name)) return alert("이미 있는 종류야.");
-    await addDoc(colTypes, { name, createdAt: serverTimestamp() });
-    $("newTypeInput").value = "";
+    if(!name) return alert("종류 이름을 입력해줘.");
+    if(types.some(t=>t.name===name)) return alert("이미 있는 종류야.");
+    await addDoc(colTypes,{year: currentYear, name, createdAt: serverTimestamp()});
+    $("newTypeInput").value="";
   });
 
   $("addUserBtn").addEventListener("click", async ()=>{
-    if (currentGrade!=="의") return;
+    if(!isAdmin()) return;
     const pw = $("newPw").value.trim();
     const grade = $("newGrade").value;
-    if (!pw) return alert("새 비밀번호를 입력해줘.");
-    if (users.some(u=>u.password===pw)) return alert("이미 있는 비밀번호야.");
-    await addDoc(colUsers, { password: pw, grade, createdAt: serverTimestamp() });
-    $("newPw").value = "";
+    if(!pw) return alert("비밀번호를 입력해줘.");
+    if(users.some(u=>u.password===pw)) return alert("이미 있는 비밀번호야.");
+    await addDoc(colUsers,{password: pw, grade, createdAt: serverTimestamp()});
+    $("newPw").value="";
   });
 
   $("clearLogsBtn").addEventListener("click", async ()=>{
-    if (currentGrade!=="의") return;
+    if(!isAdmin()) return;
     const snap = await getDocs(colLogs);
-    await Promise.all(snap.docs.map(d=>deleteDoc(doc(db,"sb_logs", d.id))));
+    await Promise.all(snap.docs.map(d=>deleteDoc(doc(db,"sb_logs",d.id))));
   });
 
-  $("saveScoreBtn").addEventListener("click", upsertMyScore);
   $("saveStatsBtn").addEventListener("click", upsertStats);
   $("addUnitBtn").addEventListener("click", addUnit);
+  $("importUnivBtn").addEventListener("click", importUniv);
+  $("clearUnivBtn").addEventListener("click", clearUniv);
+
+  // 학년도 탭 클릭
+  function handleYearClick(year){
+    if(!canViewYear(currentGrade, year)){
+      alert("이 등급은 해당 학년도 열람 권한이 없어요.");
+      return;
+    }
+    if(currentYear === year) return;
+    // 선택값들 초기화(학년도 바뀌면 데이터 다르니까)
+    selectedTypeId = null;
+    selectedRound = null;
+    destroyCharts();
+    startRealtimeForYear(year);
+    updatePickLabel();
+  }
+
+  $("tab2026").addEventListener("click", ()=>handleYearClick("2026"));
+  $("tab2027").addEventListener("click", ()=>handleYearClick("2027"));
 </script>
 </body>
 </html>
-
-

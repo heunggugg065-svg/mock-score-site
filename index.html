@@ -6,12 +6,14 @@
   <title>ScoreBoard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#111827,#4f46e5);margin:0;padding:20px}
-    .container{max-width:980px;margin:auto;background:#fff;padding:22px 22px 26px;border-radius:20px;box-shadow:0 15px 40px rgba(0,0,0,.25);position:relative}
-    h1{margin:6px 0 14px;text-align:center}
-    .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;margin:6px 0}
+    body{font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; background:linear-gradient(135deg,#111827,#4f46e5); margin:0; padding:20px}
+    .container{max-width:1050px;margin:auto;background:#fff;padding:22px 22px 28px;border-radius:18px;box-shadow:0 15px 40px rgba(0,0,0,.25);position:relative}
+    h1{margin:6px 0 12px;text-align:center}
     .top-right{position:absolute;top:14px;right:16px;display:flex;gap:10px;align-items:center}
-    .link-btn{font-size:12px;color:#4f46e5;cursor:pointer;user-select:none}
+    .link-btn{font-size:12px;color:#4f46e5;cursor:pointer;user-select:none;background:none;border:none}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;margin:6px 0}
+    .section{margin-top:16px;padding:14px;border:1px solid #eef2ff;border-radius:14px;background:#fafbff}
+    .section h3{margin:0 0 10px}
     .row{display:flex;gap:10px;flex-wrap:wrap}
     .row > *{flex:1 1 180px}
     input,select,button{padding:10px;margin:6px 0;width:100%;box-sizing:border-box;border-radius:10px;border:1px solid #d1d5db}
@@ -19,28 +21,28 @@
     button:hover{background:#4338ca}
     .ghost{background:#111827}
     .ghost:hover{background:#0b1220}
-    .section{margin-top:18px;padding:14px;border:1px solid #eef2ff;border-radius:14px;background:#fafbff}
-    .section h3{margin:0 0 10px}
+    .danger{background:#dc2626}
+    .danger:hover{background:#b91c1c}
+    .muted{color:#6b7280;font-size:12px}
+    .hidden{display:none !important}
     table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff;border-radius:12px;overflow:hidden}
     th,td{border-bottom:1px solid #eee;padding:10px;text-align:center}
     th{background:#f3f4f6}
-    .muted{color:#6b7280;font-size:12px}
-    .hidden{display:none !important}
-    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    @media (max-width: 720px){.cards{grid-template-columns:1fr}}
+    .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+    @media (max-width: 860px){.cards{grid-template-columns:1fr}}
     .card{background:#fff;border:1px solid #eee;border-radius:14px;padding:12px}
-    .card .t{font-weight:700;margin-bottom:4px}
+    .card .t{font-weight:800;margin-bottom:4px}
     .card .d{font-size:13px;color:#374151}
     canvas{margin-top:14px}
-    .danger{background:#dc2626}
-    .danger:hover{background:#b91c1c}
+    .pill{display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px}
   </style>
 </head>
+
 <body>
   <div class="container">
     <div class="top-right">
-      <span id="manageTab" class="link-btn hidden">관리</span>
-      <span id="logoutBtn" class="link-btn hidden">로그아웃</span>
+      <button id="manageTab" class="link-btn hidden" type="button">관리</button>
+      <button id="logoutBtn" class="link-btn hidden" type="button">로그아웃</button>
     </div>
 
     <h1>📊 ScoreBoard</h1>
@@ -51,27 +53,56 @@
       <h3>🔐 로그인</h3>
       <input id="pwInput" type="password" placeholder="비밀번호 입력" />
       <button id="loginBtn">로그인</button>
+      <div class="muted">* 처음엔 의 비밀번호로 로그인하면, Firestore에 의 계정이 자동으로 생성돼요.</div>
     </div>
 
-    <!-- 점수 (모든 등급 보기 가능, 의만 수정/추가/삭제) -->
+    <!-- 통계 -->
+    <div id="statsSection" class="section hidden">
+      <h3>📌 통계</h3>
+      <div class="cards">
+        <div class="card">
+          <div class="t">전체 평균(총점)</div>
+          <div class="d"><span id="overallAvg" class="pill">-</span></div>
+        </div>
+        <div class="card">
+          <div class="t">선택한 종류 평균(총점)</div>
+          <div class="d"><span id="typeAvg" class="pill">-</span></div>
+        </div>
+        <div class="card">
+          <div class="t">선택한 종류+회차 평균(총점)</div>
+          <div class="d"><span id="typeRoundAvg" class="pill">-</span></div>
+        </div>
+      </div>
+      <div class="muted" style="margin-top:8px">* 평균은 현재 저장된 데이터 기준으로 자동 계산</div>
+    </div>
+
+    <!-- 점수 -->
     <div id="scoresSection" class="section hidden">
       <h3>📈 점수</h3>
 
+      <!-- 종류/회차 선택 -->
+      <div class="row">
+        <select id="typeSelect"></select>
+        <input id="roundInput" type="number" placeholder="회차 (예: 1)" min="1" />
+        <input id="examName" placeholder="시험 이름(예: 3월 학평)" />
+      </div>
+
       <div id="scoreEditor" class="hidden">
         <div class="row">
-          <input id="examName" placeholder="시험 이름 (예: 3월 학평 1회)" />
           <input id="korean" type="number" placeholder="국어" />
           <input id="math" type="number" placeholder="수학" />
           <input id="english" type="number" placeholder="영어" />
+          <input id="percentile" type="number" placeholder="백분위(선택)" min="0" max="100"/>
         </div>
         <button id="addScoreBtn">점수 추가</button>
-        <div class="muted">* 점수 추가/삭제는 <b>의</b> 등급만 가능</div>
+        <div class="muted">* 점수 추가/수정/삭제는 <b>의</b> 등급만 가능</div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>시험</th><th>국어</th><th>수학</th><th>영어</th><th>총점</th>
+            <th>종류</th><th>회차</th><th>시험</th><th>국어</th><th>수학</th><th>영어</th><th>총점</th><th>백분위</th>
+            <th id="editColHead" class="hidden">수정</th>
             <th id="delColHead" class="hidden">삭제</th>
           </tr>
         </thead>
@@ -81,67 +112,62 @@
       <canvas id="scoreChart"></canvas>
     </div>
 
-    <!-- 대학정보: 한 이상(한/치/의) -->
-    <div id="universitySection" class="section hidden">
-      <h3>🎓 대학정보 (한 이상)</h3>
-      <div class="muted">나중에 너가 주는 “백분위별 대학 리스트”를 넣으면 여기 카드로 보여줄 수 있게 해둘게.</div>
-      <div class="cards" id="univCards">
-        <div class="card">
-          <div class="t">예시) 상위권 대학</div>
-          <div class="d">백분위 96+ → ○○대, △△대 …</div>
-        </div>
-        <div class="card">
-          <div class="t">예시) 중상위권 대학</div>
-          <div class="d">백분위 90+ → □□대, ◇◇대 …</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2026 정보: 치 이상(치/의) -->
-    <div id="info2026Section" class="section hidden">
-      <h3>🗓 2026학년도 실모/시험 정보 (치 이상)</h3>
-      <div class="cards">
-        <div class="card">
-          <div class="t">예시) 2026 학평 일정</div>
-          <div class="d">여기에 2026 관련 핵심 자료를 카드로 정리</div>
-        </div>
-        <div class="card">
-          <div class="t">예시) 2026 실모 체크리스트</div>
-          <div class="d">오답/시간관리/전략 메모 등</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 자료실: 상위 등급이 하위 등급 자료까지 열람 -->
+    <!-- 자료실 (등급 높을수록 더 많이 봄) -->
     <div id="materialsSection" class="section hidden">
       <h3>📚 주요자료</h3>
-      <div class="muted">등급이 높을수록 더 많이 봄 (의>치>한>약>수)</div>
-      <div class="cards">
+      <div class="muted">등급이 높을수록 더 많이 봄 (의&gt;치&gt;한&gt;약&gt;수)</div>
+      <div class="cards" style="margin-top:10px">
         <div class="card" data-grade="치">
-          <div class="t">치 등급 자료</div>
-          <div class="d">치 이상만 보이게 설정된 카드</div>
+          <div class="t">치 등급 자료</div><div class="d">치 이상만 열람</div>
         </div>
         <div class="card" data-grade="한">
-          <div class="t">한 등급 자료</div>
-          <div class="d">한 이상에게 보이는 카드</div>
+          <div class="t">한 등급 자료</div><div class="d">한 이상만 열람</div>
         </div>
         <div class="card" data-grade="약">
-          <div class="t">약 등급 자료</div>
-          <div class="d">약 이상에게 보이는 카드</div>
+          <div class="t">약 등급 자료</div><div class="d">약 이상만 열람</div>
         </div>
         <div class="card" data-grade="수">
-          <div class="t">수 등급 자료</div>
-          <div class="d">수 이상(=모두)에게 보이는 카드</div>
+          <div class="t">수 등급 자료</div><div class="d">모든 등급 열람</div>
         </div>
       </div>
     </div>
 
-    <!-- 관리(의 전용): 계정/권한 + 로그인 기록 -->
+    <!-- 대학정보: 한 이상 -->
+    <div id="universitySection" class="section hidden">
+      <h3>🎓 대학정보 (한 이상)</h3>
+      <div class="muted">나중에 “백분위별 대학 리스트”를 주면 여기서 자동으로 카드로 보여주게 연결해줄게.</div>
+      <div class="cards" style="margin-top:10px">
+        <div class="card"><div class="t">예시 카드</div><div class="d">백분위 96+ → ○○대…</div></div>
+        <div class="card"><div class="t">예시 카드</div><div class="d">백분위 90+ → □□대…</div></div>
+        <div class="card"><div class="t">예시 카드</div><div class="d">백분위 85+ → △△대…</div></div>
+      </div>
+    </div>
+
+    <!-- 2026 정보: 치 이상 -->
+    <div id="info2026Section" class="section hidden">
+      <h3>🗓 2026학년도 실모/시험 정보 (치 이상)</h3>
+      <div class="cards" style="margin-top:10px">
+        <div class="card"><div class="t">예시) 일정</div><div class="d">2026 학평/실모 일정 정리</div></div>
+        <div class="card"><div class="t">예시) 체크리스트</div><div class="d">오답/시간/전략 메모</div></div>
+        <div class="card"><div class="t">예시) 자료</div><div class="d">필요한 것들 모음</div></div>
+      </div>
+    </div>
+
+    <!-- 관리(의 전용): 종류/계정/로그 -->
     <div id="manageSection" class="section hidden">
       <h3>🛠 관리 (의 전용)</h3>
 
       <div class="section" style="background:#fff">
-        <h3 style="margin-bottom:6px">👤 비밀번호/등급 만들기</h3>
+        <h3 style="margin:0 0 8px">🧩 모의고사 종류 관리</h3>
+        <div class="row">
+          <input id="newTypeInput" placeholder="새 종류 이름 (예: 학력평가, 서바이벌)" />
+          <button id="addTypeBtn" class="ghost" type="button">종류 추가</button>
+        </div>
+        <div id="typeList" class="muted"></div>
+      </div>
+
+      <div class="section" style="background:#fff">
+        <h3 style="margin:0 0 8px">👤 비밀번호/등급 만들기</h3>
         <div class="row">
           <input id="newPw" placeholder="새 비밀번호(사람별로)" />
           <select id="newGrade">
@@ -151,283 +177,443 @@
             <option value="수">수</option>
             <option value="의">의</option>
           </select>
+          <button id="addUserBtn" class="ghost" type="button">추가</button>
         </div>
-        <button id="addUserBtn" class="ghost">추가</button>
-        <div class="muted">* 비밀번호는 화면에 그대로 노출하지 않음 (목록엔 ****로 표시)</div>
+        <div class="muted">* 의 등급은 관리에서 비밀번호를 원문으로 확인 가능</div>
         <div id="userList" style="margin-top:10px"></div>
       </div>
 
       <div class="section" style="background:#fff">
-        <h3 style="margin-bottom:6px">🧾 로그인 기록</h3>
-        <div id="loginRecords" class="muted"></div>
-        <button id="clearLogsBtn" class="danger">로그인 기록 전체 삭제</button>
+        <h3 style="margin:0 0 8px">🧾 로그인 기록</h3>
+        <div id="loginRecords" class="muted">불러오는 중…</div>
+        <button id="clearLogsBtn" class="danger" type="button">로그인 기록 전체 삭제</button>
       </div>
     </div>
 
   </div>
 
-<script>
-  // ===== 저장 키 =====
-  const KEY_SCORES = "sb_scores";
-  const KEY_USERS  = "sb_users";
-  const KEY_LOGS   = "sb_login_records";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+  import {
+    getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
+    onSnapshot, query, orderBy, serverTimestamp, getDocs, limit
+  } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-  // ===== 등급 계층 (높을수록 상위) =====
+  // ✅ 여기 firebaseConfig를 너 화면 값으로 그대로 바꿔넣기
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID",
+    measurementId: "YOUR_MEASUREMENT_ID" // 없어도 됨(있으면 유지)
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ===== 컬렉션 =====
+  const colTypes  = collection(db, "sb_types");
+  const colScores = collection(db, "sb_scores");
+  const colUsers  = collection(db, "sb_users");
+  const colLogs   = collection(db, "sb_logs");
+
+  // ===== 등급 =====
   const gradeHierarchy = { "의": 5, "치": 4, "한": 3, "약": 2, "수": 1 };
-
-  // ===== 초기 데이터 =====
-  let scores = JSON.parse(localStorage.getItem(KEY_SCORES) || "[]");
-  let users  = JSON.parse(localStorage.getItem(KEY_USERS)  || "null");
-  if (!users) {
-    users = { "0704160931": "의" }; // 기본 의 비밀번호
-    localStorage.setItem(KEY_USERS, JSON.stringify(users));
-  }
-
-  let currentGrade = null;
 
   // ===== DOM =====
   const $ = (id) => document.getElementById(id);
 
-  const loginSection = $("loginSection");
-  const scoresSection = $("scoresSection");
-  const scoreEditor = $("scoreEditor");
-  const delColHead = $("delColHead");
+  // ===== 상태 =====
+  let currentGrade = null;
+  let types = [];   // {id, name}
+  let scores = [];  // {id, typeId, typeName, round, examName, korean, math, english, total, percentile, createdAt}
+  let users  = [];  // {id, password, grade}
+  let logs   = [];  // {id, grade, time, createdAt}
 
-  const universitySection = $("universitySection");
-  const info2026Section = $("info2026Section");
-  const materialsSection = $("materialsSection");
+  // ===== 차트 =====
+  let chart = null;
 
-  const roleBadge = $("roleBadge");
-  const manageTab = $("manageTab");
-  const manageSection = $("manageSection");
-  const logoutBtn = $("logoutBtn");
-
-  // ===== 로그인 기록 =====
-  function saveLoginRecord(grade) {
-    const logs = JSON.parse(localStorage.getItem(KEY_LOGS) || "[]");
-    logs.push({ grade, time: new Date().toLocaleString() });
-    localStorage.setItem(KEY_LOGS, JSON.stringify(logs));
-  }
-
-  function renderLoginRecords() {
-    if (currentGrade !== "의") return;
-    const logs = JSON.parse(localStorage.getItem(KEY_LOGS) || "[]");
-    const box = $("loginRecords");
-    if (!box) return;
-    if (logs.length === 0) {
-      box.innerText = "기록 없음";
-      return;
-    }
-    box.innerHTML = logs.slice().reverse().map(l => `• [${l.time}] 등급: ${l.grade}`).join("<br/>");
-  }
+  // ====== 유틸 ======
+  const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const avg = (arr) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+  const fmt = (n) => (n==null || Number.isNaN(n)) ? "-" : (Math.round(n*10)/10).toString();
 
   // ===== 권한 적용 =====
   function applyPermissions() {
     const level = gradeHierarchy[currentGrade];
 
-    // 기본 화면 열기
-    loginSection.classList.add("hidden");
-    scoresSection.classList.remove("hidden");
-    materialsSection.classList.remove("hidden");
-    logoutBtn.classList.remove("hidden");
+    $("loginSection").classList.add("hidden");
+    $("scoresSection").classList.remove("hidden");
+    $("statsSection").classList.remove("hidden");
+    $("materialsSection").classList.remove("hidden");
+    $("logoutBtn").classList.remove("hidden");
 
-    roleBadge.classList.remove("hidden");
-    roleBadge.textContent = `현재 등급: ${currentGrade}`;
+    $("roleBadge").classList.remove("hidden");
+    $("roleBadge").textContent = `현재 등급: ${currentGrade}`;
 
-    // 의만 수정/추가/삭제 + 관리탭
     const isUi = (currentGrade === "의");
-    scoreEditor.classList.toggle("hidden", !isUi);
-    delColHead.classList.toggle("hidden", !isUi);
-    manageTab.classList.toggle("hidden", !isUi);
+    $("scoreEditor").classList.toggle("hidden", !isUi);
+    $("delColHead").classList.toggle("hidden", !isUi);
+    $("editColHead").classList.toggle("hidden", !isUi);
+    $("manageTab").classList.toggle("hidden", !isUi);
 
     // 대학정보: 한 이상
-    universitySection.classList.toggle("hidden", !(level >= gradeHierarchy["한"]));
-
+    $("universitySection").classList.toggle("hidden", !(level >= gradeHierarchy["한"]));
     // 2026 정보: 치 이상
-    info2026Section.classList.toggle("hidden", !(level >= gradeHierarchy["치"]));
+    $("info2026Section").classList.toggle("hidden", !(level >= gradeHierarchy["치"]));
 
     // 자료실 카드: 상위가 하위까지 봄
     document.querySelectorAll("[data-grade]").forEach(card => {
       const g = card.getAttribute("data-grade");
-      const cardLevel = gradeHierarchy[g];
-      card.style.display = (level >= cardLevel) ? "block" : "none";
+      card.style.display = (level >= gradeHierarchy[g]) ? "block" : "none";
     });
-
-    // 의면 로그인기록도 보여줌(관리 열었을 때)
-    if (isUi) renderLoginRecords();
   }
 
-  // ===== 스코어 렌더 =====
-  function saveScores() {
-    localStorage.setItem(KEY_SCORES, JSON.stringify(scores));
+  // ===== 타입 UI =====
+  function renderTypeSelect() {
+    const sel = $("typeSelect");
+    sel.innerHTML = "";
+    if (types.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "종류 없음(의가 관리에서 추가)";
+      sel.appendChild(opt);
+      sel.disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    for (const t of types) {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = t.name;
+      sel.appendChild(opt);
+    }
   }
 
+  function renderTypeList() {
+    if (currentGrade !== "의") return;
+    const wrap = $("typeList");
+    if (!wrap) return;
+    if (types.length === 0) {
+      wrap.innerHTML = "등록된 종류 없음";
+      return;
+    }
+    wrap.innerHTML = types.map(t => `
+      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;margin:6px 0;">
+        <div>• <b>${escapeHtml(t.name)}</b></div>
+        <button class="danger" type="button" onclick="deleteType('${t.id}')">삭제</button>
+      </div>
+    `).join("");
+  }
+
+  window.deleteType = async (typeId) => {
+    if (currentGrade !== "의") return;
+    // 이 타입 점수가 있으면 삭제 막기(실수 방지)
+    const hasScore = scores.some(s => s.typeId === typeId);
+    if (hasScore) {
+      alert("이 종류로 저장된 점수가 있어서 삭제할 수 없어. (점수 먼저 삭제해야 함)");
+      return;
+    }
+    await deleteDoc(doc(db, "sb_types", typeId));
+  };
+
+  // ===== 점수 UI =====
   function renderTable() {
     const tbody = $("scoreTable");
     tbody.innerHTML = "";
-    scores.forEach((s, idx) => {
+
+    for (const s of scores) {
       const tr = document.createElement("tr");
       tr.innerHTML = `
+        <td>${escapeHtml(s.typeName)}</td>
+        <td>${escapeHtml(s.round)}</td>
         <td>${escapeHtml(s.examName)}</td>
         <td>${s.korean}</td>
         <td>${s.math}</td>
         <td>${s.english}</td>
         <td><b>${s.total}</b></td>
-        ${currentGrade === "의" ? `<td><button class="danger" onclick="deleteScore(${idx})">삭제</button></td>` : ""}
+        <td>${s.percentile ?? "-"}</td>
+        ${currentGrade === "의" ? `<td><button class="ghost" type="button" onclick="editScore('${s.id}')">수정</button></td>` : ""}
+        ${currentGrade === "의" ? `<td><button class="danger" type="button" onclick="deleteScore('${s.id}')">삭제</button></td>` : ""}
       `;
       tbody.appendChild(tr);
-    });
-  }
-
-  window.deleteScore = function(idx) {
-    if (currentGrade !== "의") return;
-    scores.splice(idx, 1);
-    saveScores();
-    renderTable();
-    renderChart();
+    }
   }
 
   function renderChart() {
-    const ctx = $("scoreChart").getContext("2d");
-    const labels = scores.map(s => s.examName);
+    const canvas = $("scoreChart");
+    const ctx = canvas.getContext("2d");
+    const labels = scores.map(s => `${s.typeName} ${s.round}회`);
     const totals = scores.map(s => s.total);
 
-    if (window.myChart) window.myChart.destroy();
-
-    window.myChart = new Chart(ctx, {
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, {
       type: "line",
       data: { labels, datasets: [{ label: "총점 추이", data: totals, fill: false }] },
       options: { responsive: true, scales: { y: { beginAtZero: true } } }
     });
   }
 
-  // ===== 유저(비밀번호/등급) 관리 (의 전용) =====
-  function saveUsers() {
-    localStorage.setItem(KEY_USERS, JSON.stringify(users));
+  function renderStats() {
+    // 전체 평균
+    $("overallAvg").textContent = fmt(avg(scores.map(s => s.total)));
+
+    const selectedTypeId = $("typeSelect").value;
+    const selectedRound = parseInt($("roundInput").value, 10);
+
+    const byType = scores.filter(s => s.typeId === selectedTypeId);
+    $("typeAvg").textContent = fmt(avg(byType.map(s => s.total)));
+
+    const byTypeRound = byType.filter(s => s.round === selectedRound);
+    $("typeRoundAvg").textContent = fmt(avg(byTypeRound.map(s => s.total)));
   }
 
+  $("typeSelect").addEventListener("change", renderStats);
+  $("roundInput").addEventListener("input", renderStats);
+
+  window.deleteScore = async (id) => {
+    if (currentGrade !== "의") return;
+    await deleteDoc(doc(db, "sb_scores", id));
+  };
+
+  window.editScore = async (id) => {
+    if (currentGrade !== "의") return;
+    const s = scores.find(x => x.id === id);
+    if (!s) return;
+
+    const nk = prompt("국어 점수", s.korean);
+    if (nk === null) return;
+    const nm = prompt("수학 점수", s.math);
+    if (nm === null) return;
+    const ne = prompt("영어 점수", s.english);
+    if (ne === null) return;
+    const np = prompt("백분위(없으면 빈칸)", s.percentile ?? "");
+    if (np === null) return;
+
+    const korean = parseInt(nk, 10);
+    const math = parseInt(nm, 10);
+    const english = parseInt(ne, 10);
+    if ([korean, math, english].some(v => Number.isNaN(v))) {
+      alert("점수는 숫자로 입력해줘.");
+      return;
+    }
+    const total = korean + math + english;
+    const percentile = (np.trim()==="") ? null : parseInt(np, 10);
+
+    await updateDoc(doc(db, "sb_scores", id), { korean, math, english, total, percentile });
+  };
+
+  // ===== 유저(비밀번호/등급) 관리 =====
   function renderUsers() {
     if (currentGrade !== "의") return;
     const wrap = $("userList");
     wrap.innerHTML = "";
 
-    Object.keys(users).forEach(pw => {
-      const grade = users[pw];
+    users.forEach(u => {
       const div = document.createElement("div");
       div.className = "card";
       div.innerHTML = `
-        <div class="t">비밀번호: ****</div>
-        <div class="d">등급: <b>${grade}</b></div>
-        <button class="danger" style="margin-top:8px" onclick="removeUser('${escapeAttr(pw)}')">삭제</button>
+        <div class="t">비밀번호: <b>${escapeHtml(u.password)}</b></div>
+        <div class="d">등급: <b>${u.grade}</b></div>
+        <button class="danger" type="button" style="margin-top:8px" onclick="removeUser('${u.id}')">삭제</button>
       `;
-      // 기본 의 비번 삭제 방지(원하면 나중에 풀어줄게)
-      if (pw === "0704160931") {
-        div.querySelector("button").disabled = true;
-        div.querySelector("button").textContent = "기본 의 비번(삭제 불가)";
-        div.querySelector("button").style.opacity = "0.6";
-        div.querySelector("button").style.cursor = "not-allowed";
-      }
       wrap.appendChild(div);
     });
   }
 
-  window.removeUser = function(pw) {
+  window.removeUser = async (id) => {
     if (currentGrade !== "의") return;
-    if (pw === "0704160931") return;
-    delete users[pw];
-    saveUsers();
-    renderUsers();
-  }
-
-  // ===== 이벤트 =====
-  $("loginBtn").addEventListener("click", () => {
-    const pw = $("pwInput").value;
-    const grade = users[pw];
-    if (!grade) {
-      alert("비밀번호가 틀렸습니다.");
+    const u = users.find(x => x.id === id);
+    if (!u) return;
+    if (u.password === "0704160931") {
+      alert("기본 의 비번은 삭제하지 않는 걸 추천해.");
       return;
     }
-    currentGrade = grade;
-    saveLoginRecord(currentGrade);
+    await deleteDoc(doc(db, "sb_users", id));
+  };
+
+  function renderLogs() {
+    if (currentGrade !== "의") return;
+    const box = $("loginRecords");
+    if (!box) return;
+    if (logs.length === 0) {
+      box.textContent = "기록 없음";
+      return;
+    }
+    box.innerHTML = logs.slice().reverse().map(l => `• [${escapeHtml(l.time)}] 등급: ${escapeHtml(l.grade)}`).join("<br/>");
+  }
+
+  // ===== Firestore 실시간 구독 =====
+  function startRealtime() {
+    onSnapshot(query(colTypes, orderBy("createdAt", "asc")), (snap) => {
+      types = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderTypeSelect();
+      if (currentGrade === "의") renderTypeList();
+      renderStats();
+    });
+
+    onSnapshot(query(colScores, orderBy("createdAt", "asc")), (snap) => {
+      const typeMap = new Map(types.map(t => [t.id, t.name]));
+      scores = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          typeName: typeMap.get(data.typeId) ?? "(삭제된 종류)"
+        };
+      });
+      renderTable();
+      renderChart();
+      renderStats();
+    });
+
+    onSnapshot(query(colUsers, orderBy("createdAt", "asc")), (snap) => {
+      users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (currentGrade === "의") renderUsers();
+    });
+
+    onSnapshot(query(colLogs, orderBy("createdAt", "asc")), (snap) => {
+      logs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (currentGrade === "의") renderLogs();
+    });
+  }
+
+  // ===== 로그인 =====
+  async function ensureDefaultAdminIfNeeded(enteredPw) {
+    // users가 비어있고 entered가 기본 의 비번이면 자동 생성
+    const snap = await getDocs(query(colUsers, limit(1)));
+    if (snap.empty && enteredPw === "0704160931") {
+      await addDoc(colUsers, { password: "0704160931", grade: "의", createdAt: serverTimestamp() });
+      // 기본 타입도 하나 만들어주기(없으면 UI가 답답하니까)
+      const typeSnap = await getDocs(query(colTypes, limit(1)));
+      if (typeSnap.empty) {
+        await addDoc(colTypes, { name: "학력평가", createdAt: serverTimestamp() });
+        await addDoc(colTypes, { name: "서바이벌", createdAt: serverTimestamp() });
+      }
+      return true;
+    }
+    return false;
+  }
+
+  async function logLogin(grade) {
+    await addDoc(colLogs, { grade, time: new Date().toLocaleString(), createdAt: serverTimestamp() });
+  }
+
+  $("loginBtn").addEventListener("click", async () => {
+    const entered = $("pwInput").value.trim();
+    if (!entered) return alert("비밀번호를 입력해줘.");
+
+    await ensureDefaultAdminIfNeeded(entered);
+
+    // users 목록을 한번 읽어 로그인 확인
+    const snap = await getDocs(colUsers);
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const found = list.find(u => u.password === entered);
+    if (!found) return alert("비밀번호가 틀렸습니다.");
+
+    currentGrade = found.grade;
+    await logLogin(currentGrade);
+
     applyPermissions();
-    renderTable();
-    renderChart();
+    startRealtime();
   });
 
-  $("addScoreBtn").addEventListener("click", () => {
+  // ===== 점수 추가 =====
+  $("addScoreBtn").addEventListener("click", async () => {
     if (currentGrade !== "의") return;
 
+    const typeId = $("typeSelect").value;
+    const round = parseInt($("roundInput").value, 10);
     const examName = $("examName").value.trim();
+
     const korean = parseInt($("korean").value, 10);
     const math = parseInt($("math").value, 10);
     const english = parseInt($("english").value, 10);
+    const percentileRaw = $("percentile").value.trim();
 
-    if (!examName || [korean, math, english].some(v => Number.isNaN(v))) {
-      alert("시험 이름/점수를 모두 입력해줘.");
-      return;
-    }
+    if (!typeId) return alert("모의고사 종류를 선택해줘.");
+    if (Number.isNaN(round) || round < 1) return alert("회차를 숫자로 입력해줘 (예: 1).");
+    if (!examName) return alert("시험 이름을 입력해줘.");
+    if ([korean, math, english].some(v => Number.isNaN(v))) return alert("점수를 모두 숫자로 입력해줘.");
 
     const total = korean + math + english;
-    scores.push({ examName, korean, math, english, total });
-    saveScores();
+    const percentile = percentileRaw === "" ? null : parseInt(percentileRaw, 10);
 
+    await addDoc(colScores, {
+      typeId,
+      round,
+      examName,
+      korean, math, english,
+      total,
+      percentile,
+      createdAt: serverTimestamp()
+    });
+
+    // 입력칸 정리
     $("examName").value = "";
     $("korean").value = "";
     $("math").value = "";
     $("english").value = "";
-
-    renderTable();
-    renderChart();
+    $("percentile").value = "";
   });
 
-  manageTab.addEventListener("click", () => {
+  // ===== 관리탭 =====
+  $("manageTab").addEventListener("click", () => {
     if (currentGrade !== "의") return;
-    manageSection.classList.toggle("hidden");
+    $("manageSection").classList.toggle("hidden");
     renderUsers();
-    renderLoginRecords();
+    renderLogs();
+    renderTypeList();
+    $("manageSection").scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
-  $("addUserBtn").addEventListener("click", () => {
+  $("addTypeBtn").addEventListener("click", async () => {
+    if (currentGrade !== "의") return;
+    const name = $("newTypeInput").value.trim();
+    if (!name) return alert("종류 이름을 입력해줘.");
+    // 중복 방지
+    if (types.some(t => t.name === name)) return alert("이미 있는 종류야.");
+    await addDoc(colTypes, { name, createdAt: serverTimestamp() });
+    $("newTypeInput").value = "";
+  });
+
+  $("addUserBtn").addEventListener("click", async () => {
     if (currentGrade !== "의") return;
     const pw = $("newPw").value.trim();
     const grade = $("newGrade").value;
     if (!pw) return alert("새 비밀번호를 입력해줘.");
-    users[pw] = grade;
-    saveUsers();
+    // 중복 방지
+    if (users.some(u => u.password === pw)) return alert("이미 있는 비밀번호야.");
+    await addDoc(colUsers, { password: pw, grade, createdAt: serverTimestamp() });
     $("newPw").value = "";
-    renderUsers();
-    alert(`추가됨: 등급 ${grade}`);
   });
 
-  $("clearLogsBtn").addEventListener("click", () => {
+  $("clearLogsBtn").addEventListener("click", async () => {
     if (currentGrade !== "의") return;
-    localStorage.setItem(KEY_LOGS, "[]");
-    renderLoginRecords();
+    // 로그 전부 삭제(간단 구현)
+    const snap = await getDocs(colLogs);
+    const promises = snap.docs.map(d => deleteDoc(doc(db, "sb_logs", d.id)));
+    await Promise.all(promises);
   });
 
-  logoutBtn.addEventListener("click", () => {
+  // ===== 로그아웃 =====
+  $("logoutBtn").addEventListener("click", () => {
     currentGrade = null;
-    // 화면 리셋
-    loginSection.classList.remove("hidden");
-    scoresSection.classList.add("hidden");
-    universitySection.classList.add("hidden");
-    info2026Section.classList.add("hidden");
-    materialsSection.classList.add("hidden");
-    manageSection.classList.add("hidden");
-    roleBadge.classList.add("hidden");
-    manageTab.classList.add("hidden");
-    logoutBtn.classList.add("hidden");
+    $("loginSection").classList.remove("hidden");
+    $("scoresSection").classList.add("hidden");
+    $("statsSection").classList.add("hidden");
+    $("materialsSection").classList.add("hidden");
+    $("universitySection").classList.add("hidden");
+    $("info2026Section").classList.add("hidden");
+    $("manageSection").classList.add("hidden");
+    $("roleBadge").classList.add("hidden");
+    $("manageTab").classList.add("hidden");
+    $("logoutBtn").classList.add("hidden");
     $("pwInput").value = "";
   });
 
-  // 유틸
-  function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-  }
-  function escapeAttr(str){
-    return String(str).replace(/['"\\\\]/g, "\\$&");
-  }
 </script>
 </body>
 </html>
-

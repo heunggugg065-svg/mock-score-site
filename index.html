@@ -7,34 +7,40 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body{font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; background:linear-gradient(135deg,#111827,#4f46e5); margin:0; padding:20px}
-    .container{max-width:1050px;margin:auto;background:#fff;padding:22px 22px 28px;border-radius:18px;box-shadow:0 15px 40px rgba(0,0,0,.25);position:relative}
+    .container{max-width:1100px;margin:auto;background:#fff;padding:22px 22px 28px;border-radius:18px;box-shadow:0 15px 40px rgba(0,0,0,.25);position:relative}
     h1{margin:6px 0 12px;text-align:center}
     .top-right{position:absolute;top:14px;right:16px;display:flex;gap:10px;align-items:center}
     .link-btn{font-size:12px;color:#4f46e5;cursor:pointer;user-select:none;background:none;border:none}
     .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;margin:6px 0}
     .section{margin-top:16px;padding:14px;border:1px solid #eef2ff;border-radius:14px;background:#fafbff}
     .section h3{margin:0 0 10px}
-    .row{display:flex;gap:10px;flex-wrap:wrap}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input,select,button{padding:10px;margin:6px 0;box-sizing:border-box;border-radius:10px;border:1px solid #d1d5db}
+    input,select{width:100%}
     .row > *{flex:1 1 180px}
-    input,select,button{padding:10px;margin:6px 0;width:100%;box-sizing:border-box;border-radius:10px;border:1px solid #d1d5db}
     button{background:#4f46e5;color:#fff;border:none;cursor:pointer;font-weight:700}
     button:hover{background:#4338ca}
     .ghost{background:#111827}
     .ghost:hover{background:#0b1220}
     .danger{background:#dc2626}
     .danger:hover{background:#b91c1c}
+    .pill{display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px}
     .muted{color:#6b7280;font-size:12px}
     .hidden{display:none !important}
-    table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff;border-radius:12px;overflow:hidden}
-    th,td{border-bottom:1px solid #eee;padding:10px;text-align:center}
-    th{background:#f3f4f6}
-    .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-    @media (max-width: 860px){.cards{grid-template-columns:1fr}}
+    .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .grid4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media (max-width: 900px){.grid2,.grid4{grid-template-columns:1fr}}
     .card{background:#fff;border:1px solid #eee;border-radius:14px;padding:12px}
     .card .t{font-weight:800;margin-bottom:4px}
     .card .d{font-size:13px;color:#374151}
-    canvas{margin-top:14px}
-    .pill{display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px}
+    canvas{margin-top:10px}
+    .btnbar{display:flex;gap:8px;flex-wrap:wrap}
+    .btnbar button{width:auto;padding:8px 12px;border-radius:999px}
+    .btnbar .active{outline:3px solid #c7d2fe}
+    table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff;border-radius:12px;overflow:hidden}
+    th,td{border-bottom:1px solid #eee;padding:10px;text-align:center}
+    th{background:#f3f4f6}
+    .mini{font-size:12px}
   </style>
 </head>
 
@@ -53,112 +59,106 @@
       <h3>🔐 로그인</h3>
       <input id="pwInput" type="password" placeholder="비밀번호 입력" />
       <button id="loginBtn">로그인</button>
-      <div class="muted">* 처음엔 의 비밀번호로 로그인하면, Firestore에 의 계정이 자동으로 생성돼요.</div>
+      <div class="muted">* 처음엔 의 비밀번호(0704160931)로 로그인하면, Firestore에 의 계정이 자동 생성돼요.</div>
     </div>
 
-    <!-- 통계 -->
-    <div id="statsSection" class="section hidden">
-      <h3>📌 통계</h3>
-      <div class="cards">
-        <div class="card">
-          <div class="t">전체 평균(총점)</div>
-          <div class="d"><span id="overallAvg" class="pill">-</span></div>
-        </div>
-        <div class="card">
-          <div class="t">선택한 종류 평균(총점)</div>
-          <div class="d"><span id="typeAvg" class="pill">-</span></div>
-        </div>
-        <div class="card">
-          <div class="t">선택한 종류+회차 평균(총점)</div>
-          <div class="d"><span id="typeRoundAvg" class="pill">-</span></div>
-        </div>
-      </div>
-      <div class="muted" style="margin-top:8px">* 평균은 현재 저장된 데이터 기준으로 자동 계산</div>
-    </div>
+    <!-- 선택 UI -->
+    <div id="pickSection" class="section hidden">
+      <h3>🧭 선택</h3>
 
-    <!-- 점수 -->
-    <div id="scoresSection" class="section hidden">
-      <h3>📈 점수</h3>
-
-      <!-- 종류/회차 선택 -->
       <div class="row">
-        <select id="typeSelect"></select>
-        <input id="roundInput" type="number" placeholder="회차 (예: 1)" min="1" />
-        <input id="examName" placeholder="시험 이름(예: 3월 학평)" />
-      </div>
-
-      <div id="scoreEditor" class="hidden">
-        <div class="row">
-          <input id="korean" type="number" placeholder="국어" />
-          <input id="math" type="number" placeholder="수학" />
-          <input id="english" type="number" placeholder="영어" />
-          <input id="percentile" type="number" placeholder="백분위(선택)" min="0" max="100"/>
+        <div style="flex:2 1 360px">
+          <div class="muted">종류 선택</div>
+          <select id="typeSelect"></select>
         </div>
-        <button id="addScoreBtn">점수 추가</button>
-        <div class="muted">* 점수 추가/수정/삭제는 <b>의</b> 등급만 가능</div>
+        <div style="flex:3 1 420px">
+          <div class="muted">현재 선택</div>
+          <div class="pill" id="currentPick">-</div>
+        </div>
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>종류</th><th>회차</th><th>시험</th><th>국어</th><th>수학</th><th>영어</th><th>총점</th><th>백분위</th>
-            <th id="editColHead" class="hidden">수정</th>
-            <th id="delColHead" class="hidden">삭제</th>
-          </tr>
-        </thead>
-        <tbody id="scoreTable"></tbody>
-      </table>
+      <div class="muted" style="margin-top:6px">과목 선택(버튼)</div>
+      <div id="subjectButtons" class="btnbar"></div>
 
-      <canvas id="scoreChart"></canvas>
+      <div class="muted" style="margin-top:10px">회차 선택(자동 버튼)</div>
+      <div id="roundButtons" class="btnbar"></div>
     </div>
 
-    <!-- 자료실 (등급 높을수록 더 많이 봄) -->
-    <div id="materialsSection" class="section hidden">
-      <h3>📚 주요자료</h3>
-      <div class="muted">등급이 높을수록 더 많이 봄 (의&gt;치&gt;한&gt;약&gt;수)</div>
-      <div class="cards" style="margin-top:10px">
-        <div class="card" data-grade="치">
-          <div class="t">치 등급 자료</div><div class="d">치 이상만 열람</div>
-        </div>
-        <div class="card" data-grade="한">
-          <div class="t">한 등급 자료</div><div class="d">한 이상만 열람</div>
-        </div>
-        <div class="card" data-grade="약">
-          <div class="t">약 등급 자료</div><div class="d">약 이상만 열람</div>
-        </div>
-        <div class="card" data-grade="수">
-          <div class="t">수 등급 자료</div><div class="d">모든 등급 열람</div>
-        </div>
+    <!-- 점수 입력(의만) -->
+    <div id="scoreEditorSection" class="section hidden">
+      <h3>✍️ 점수 입력 (의 전용)</h3>
+      <div class="row">
+        <input id="scoreInput" type="number" placeholder="점수" />
+        <input id="percentileInput" type="number" placeholder="백분위(선택)" min="0" max="100" />
+        <button id="saveScoreBtn" type="button">저장/업데이트</button>
       </div>
+      <div class="muted">* (선택한 종류/과목/회차) 조합이 이미 있으면 업데이트, 없으면 새로 저장</div>
     </div>
 
-    <!-- 대학정보: 한 이상 -->
-    <div id="universitySection" class="section hidden">
-      <h3>🎓 대학정보 (한 이상)</h3>
-      <div class="muted">나중에 “백분위별 대학 리스트”를 주면 여기서 자동으로 카드로 보여주게 연결해줄게.</div>
-      <div class="cards" style="margin-top:10px">
-        <div class="card"><div class="t">예시 카드</div><div class="d">백분위 96+ → ○○대…</div></div>
-        <div class="card"><div class="t">예시 카드</div><div class="d">백분위 90+ → □□대…</div></div>
-        <div class="card"><div class="t">예시 카드</div><div class="d">백분위 85+ → △△대…</div></div>
-      </div>
-    </div>
+    <!-- 그래프 4개 -->
+    <div id="chartsSection" class="section hidden">
+      <h3>📈 그래프</h3>
 
-    <!-- 2026 정보: 치 이상 -->
-    <div id="info2026Section" class="section hidden">
-      <h3>🗓 2026학년도 실모/시험 정보 (치 이상)</h3>
-      <div class="cards" style="margin-top:10px">
-        <div class="card"><div class="t">예시) 일정</div><div class="d">2026 학평/실모 일정 정리</div></div>
-        <div class="card"><div class="t">예시) 체크리스트</div><div class="d">오답/시간/전략 메모</div></div>
-        <div class="card"><div class="t">예시) 자료</div><div class="d">필요한 것들 모음</div></div>
+      <div class="grid4">
+        <div class="card">
+          <div class="t">그래프 1) 선택한 종류의 해당 과목 경향</div>
+          <div class="d mini">X축=회차, Y축=점수 (선택한 과목 1개만)</div>
+          <canvas id="chart1"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="t">그래프 2) 내 모든 시험에서 해당 과목 경향</div>
+          <div class="d mini">종류 상관없이 선택 과목만 모아서</div>
+          <canvas id="chart2"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="t">그래프 3) 해당 시험에서 다른 사람들과 비교</div>
+          <div class="d mini">의가 입력한 평균/등급컷과 비교</div>
+          <canvas id="chart3"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="t">그래프 4) 단원별 점수 비교</div>
+          <div class="d mini">의가 입력한 단원 점수</div>
+          <canvas id="chart4"></canvas>
+        </div>
       </div>
     </div>
 
-    <!-- 관리(의 전용): 종류/계정/로그 -->
+    <!-- 표(선택 조합 점수 + 통계/단원) -->
+    <div id="detailSection" class="section hidden">
+      <h3>📌 선택 상세</h3>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="t">내 점수(선택 조합)</div>
+          <div class="d">점수: <b id="myScoreLabel">-</b> / 백분위: <b id="myPctLabel">-</b></div>
+          <div class="muted">* (종류/과목/회차) 선택했을 때 표시</div>
+        </div>
+
+        <div class="card">
+          <div class="t">시험 통계(다른사람 비교용)</div>
+          <div class="d">평균: <b id="avgLabel">-</b></div>
+          <div class="muted">* 등급컷은 그래프3에 선으로 표시</div>
+        </div>
+      </div>
+
+      <div class="section" style="background:#fff;margin-top:12px">
+        <h3 style="margin:0 0 8px">단원별 점수</h3>
+        <table>
+          <thead><tr><th>단원</th><th>점수</th><th>만점</th></tr></thead>
+          <tbody id="unitTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 관리(의 전용) -->
     <div id="manageSection" class="section hidden">
       <h3>🛠 관리 (의 전용)</h3>
 
       <div class="section" style="background:#fff">
-        <h3 style="margin:0 0 8px">🧩 모의고사 종류 관리</h3>
+        <h3 style="margin:0 0 8px">🧩 종류 관리</h3>
         <div class="row">
           <input id="newTypeInput" placeholder="새 종류 이름 (예: 학력평가, 서바이벌)" />
           <button id="addTypeBtn" class="ghost" type="button">종류 추가</button>
@@ -179,7 +179,7 @@
           </select>
           <button id="addUserBtn" class="ghost" type="button">추가</button>
         </div>
-        <div class="muted">* 의 등급은 관리에서 비밀번호를 원문으로 확인 가능</div>
+        <div class="muted">* 의 등급은 관리에서 비밀번호 원문 확인 가능</div>
         <div id="userList" style="margin-top:10px"></div>
       </div>
 
@@ -188,91 +188,138 @@
         <div id="loginRecords" class="muted">불러오는 중…</div>
         <button id="clearLogsBtn" class="danger" type="button">로그인 기록 전체 삭제</button>
       </div>
-    </div>
 
+      <div class="section" style="background:#fff">
+        <h3 style="margin:0 0 8px">📊 시험 통계 입력(그래프3)</h3>
+        <div class="muted">현재 선택(종류/과목/회차)에 대해 평균/등급컷을 저장</div>
+        <div class="row">
+          <input id="statAvg" type="number" placeholder="평균(예: 78)" />
+          <input id="cut1" type="number" placeholder="1등급컷(선택)" />
+          <input id="cut2" type="number" placeholder="2등급컷(선택)" />
+          <input id="cut3" type="number" placeholder="3등급컷(선택)" />
+        </div>
+        <div class="row">
+          <input id="cut4" type="number" placeholder="4등급컷(선택)" />
+          <input id="cut5" type="number" placeholder="5등급컷(선택)" />
+          <input id="cut6" type="number" placeholder="6등급컷(선택)" />
+        </div>
+        <div class="row">
+          <input id="cut7" type="number" placeholder="7등급컷(선택)" />
+          <input id="cut8" type="number" placeholder="8등급컷(선택)" />
+          <input id="cut9" type="number" placeholder="9등급컷(선택)" />
+        </div>
+        <button id="saveStatsBtn" class="ghost" type="button">통계 저장/업데이트</button>
+      </div>
+
+      <div class="section" style="background:#fff">
+        <h3 style="margin:0 0 8px">🧩 단원 점수 입력(그래프4)</h3>
+        <div class="muted">현재 선택(종류/과목/회차)에 대해 단원 점수 추가</div>
+        <div class="row">
+          <input id="unitName" placeholder="단원명(예: 문학/비문학, 미적분-수열)" />
+          <input id="unitScore" type="number" placeholder="점수" />
+          <input id="unitMax" type="number" placeholder="만점(선택)" />
+          <button id="addUnitBtn" class="ghost" type="button">단원 추가</button>
+        </div>
+        <div class="muted">* 단원은 여러 개 쌓임(삭제 기능은 다음에 추가 가능)</div>
+      </div>
+    </div>
   </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
   import {
     getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
-    onSnapshot, query, orderBy, serverTimestamp, getDocs, limit
+    onSnapshot, query, orderBy, serverTimestamp, getDocs, limit, where
   } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-  // ✅ 여기 firebaseConfig를 너 화면 값으로 그대로 바꿔넣기
+  // ✅ 너 Firebase 값 (이미 너가 쓰던 그대로)
   const firebaseConfig = {
-  apiKey: "AIzaSyCuMFRksmpH0TuNqv3YoMa76DAAN4r3B84",
-  authDomain: "scoreboard-d4bf9.firebaseapp.com",
-  projectId: "scoreboard-d4bf9",
-  storageBucket: "scoreboard-d4bf9.firebasestorage.app",
-  messagingSenderId: "272482248722",
-  appId: "1:272482248722:web:81147fe66081feb9da50cb",
-  measurementId: "G-VC1922P5SV"
-};
-
+    apiKey: "AIzaSyCuMFRksmpH0TuNqv3YoMa76DAAN4r3B84",
+    authDomain: "scoreboard-d4bf9.firebaseapp.com",
+    projectId: "scoreboard-d4bf9",
+    storageBucket: "scoreboard-d4bf9.firebasestorage.app",
+    messagingSenderId: "272482248722",
+    appId: "1:272482248722:web:81147fe66081feb9da50cb",
+    measurementId: "G-VC1922P5SV"
+  };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // ===== 컬렉션 =====
+  // 컬렉션
   const colTypes  = collection(db, "sb_types");
-  const colScores = collection(db, "sb_scores");
+  const colScores = collection(db, "sb_scores");      // 내 점수 (typeId, subject, round, score, percentile)
   const colUsers  = collection(db, "sb_users");
   const colLogs   = collection(db, "sb_logs");
+  const colStats  = collection(db, "sb_exam_stats");  // 다른사람 비교(평균/등급컷)
+  const colUnits  = collection(db, "sb_unit_scores"); // 단원별 점수
 
-  // ===== 등급 =====
+  // 등급
   const gradeHierarchy = { "의": 5, "치": 4, "한": 3, "약": 2, "수": 1 };
 
-  // ===== DOM =====
-  const $ = (id) => document.getElementById(id);
+  // 과목(고정)
+  const SUBJECTS = ["국어","수학","영어","화학1","생명과학1","한국사"];
 
-  // ===== 상태 =====
+  // 상태
   let currentGrade = null;
-  let types = [];   // {id, name}
-  let scores = [];  // {id, typeId, typeName, round, examName, korean, math, english, total, percentile, createdAt}
-  let users  = [];  // {id, password, grade}
-  let logs   = [];  // {id, grade, time, createdAt}
 
-  // ===== 차트 =====
-  let chart = null;
+  let types = [];   // {id,name}
+  let users = [];   // {id,password,grade}
+  let logs  = [];   // {id,grade,time}
+  let scores = [];  // {id,typeId,round,subject,score,percentile,createdAt}
+  let stats = [];   // {id,typeId,round,subject,avg,cut1..cut9}
+  let units = [];   // {id,typeId,round,subject,unit,score,maxScore}
 
-  // ====== 유틸 ======
+  // 선택 상태
+  let selectedTypeId = null;
+  let selectedSubject = null;
+  let selectedRound = null;
+
+  // 차트
+  let c1=null, c2=null, c3=null, c4=null;
+
+  const $ = (id) => document.getElementById(id);
   const escapeHtml = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const avg = (arr) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length) : null;
-  const fmt = (n) => (n==null || Number.isNaN(n)) ? "-" : (Math.round(n*10)/10).toString();
 
   // ===== 권한 적용 =====
   function applyPermissions() {
-    const level = gradeHierarchy[currentGrade];
-
     $("loginSection").classList.add("hidden");
-    $("scoresSection").classList.remove("hidden");
-    $("statsSection").classList.remove("hidden");
-    $("materialsSection").classList.remove("hidden");
+    $("pickSection").classList.remove("hidden");
+    $("chartsSection").classList.remove("hidden");
+    $("detailSection").classList.remove("hidden");
     $("logoutBtn").classList.remove("hidden");
 
     $("roleBadge").classList.remove("hidden");
     $("roleBadge").textContent = `현재 등급: ${currentGrade}`;
 
-    const isUi = (currentGrade === "의");
-    $("scoreEditor").classList.toggle("hidden", !isUi);
-    $("delColHead").classList.toggle("hidden", !isUi);
-    $("editColHead").classList.toggle("hidden", !isUi);
-    $("manageTab").classList.toggle("hidden", !isUi);
-
-    // 대학정보: 한 이상
-    $("universitySection").classList.toggle("hidden", !(level >= gradeHierarchy["한"]));
-    // 2026 정보: 치 이상
-    $("info2026Section").classList.toggle("hidden", !(level >= gradeHierarchy["치"]));
-
-    // 자료실 카드: 상위가 하위까지 봄
-    document.querySelectorAll("[data-grade]").forEach(card => {
-      const g = card.getAttribute("data-grade");
-      card.style.display = (level >= gradeHierarchy[g]) ? "block" : "none";
-    });
+    const isAdmin = (currentGrade === "의");
+    $("manageTab").classList.toggle("hidden", !isAdmin);
+    $("scoreEditorSection").classList.toggle("hidden", !isAdmin);
   }
 
-  // ===== 타입 UI =====
+  // ===== 기본 관리자/기본 종류 생성 =====
+  async function ensureDefaultAdminIfNeeded(enteredPw) {
+    const snap = await getDocs(query(colUsers, limit(1)));
+    if (!snap.empty) return false;
+
+    if (enteredPw === "0704160931") {
+      await addDoc(colUsers, { password: "0704160931", grade: "의", createdAt: serverTimestamp() });
+
+      const typeSnap = await getDocs(query(colTypes, limit(1)));
+      if (typeSnap.empty) {
+        await addDoc(colTypes, { name: "학력평가", createdAt: serverTimestamp() });
+        await addDoc(colTypes, { name: "서바이벌", createdAt: serverTimestamp() });
+      }
+      return true;
+    }
+    return false;
+  }
+
+  async function logLogin(grade) {
+    await addDoc(colLogs, { grade, time: new Date().toLocaleString(), createdAt: serverTimestamp() });
+  }
+
+  // ===== 타입 셀렉트 =====
   function renderTypeSelect() {
     const sel = $("typeSelect");
     sel.innerHTML = "";
@@ -291,14 +338,310 @@
       opt.textContent = t.name;
       sel.appendChild(opt);
     }
+
+    // 첫 타입 자동 선택
+    if (!selectedTypeId) selectedTypeId = sel.value;
   }
 
+  // ===== 과목 버튼 =====
+  function renderSubjectButtons() {
+    const wrap = $("subjectButtons");
+    wrap.innerHTML = "";
+    SUBJECTS.forEach(subj => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ghost";
+      btn.textContent = subj;
+      btn.onclick = () => {
+        selectedSubject = subj;
+        selectedRound = null;
+        markActiveButtons();
+        renderRoundButtonsAuto();
+        updatePickLabel();
+        updateDetail();
+        renderAllCharts();
+      };
+      wrap.appendChild(btn);
+    });
+
+    if (!selectedSubject) {
+      selectedSubject = SUBJECTS[0];
+    }
+    markActiveButtons();
+  }
+
+  function markActiveButtons() {
+    [...$("subjectButtons").querySelectorAll("button")].forEach(b=>{
+      b.classList.toggle("active", b.textContent === selectedSubject);
+    });
+    [...$("roundButtons").querySelectorAll("button")].forEach(b=>{
+      const r = Number(b.dataset.round);
+      b.classList.toggle("active", Number.isFinite(r) && r === selectedRound);
+    });
+  }
+
+  // ===== 자동 회차 버튼 =====
+  function renderRoundButtonsAuto() {
+    const wrap = $("roundButtons");
+    wrap.innerHTML = "";
+
+    if (!selectedTypeId || !selectedSubject) {
+      wrap.innerHTML = `<span class="muted">종류/과목을 먼저 선택해줘</span>`;
+      return;
+    }
+
+    const rounds = [...new Set(
+      scores
+        .filter(s => s.typeId === selectedTypeId && s.subject === selectedSubject)
+        .map(s => Number(s.round))
+        .filter(r => Number.isFinite(r))
+    )].sort((a,b)=>a-b);
+
+    if (rounds.length === 0) {
+      wrap.innerHTML = `<span class="muted">아직 저장된 회차가 없어 (의가 점수 저장하면 자동 생성)</span>`;
+      return;
+    }
+
+    rounds.forEach(r=>{
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ghost";
+      btn.textContent = `${r}회`;
+      btn.dataset.round = String(r);
+      btn.onclick = () => {
+        selectedRound = r;
+        markActiveButtons();
+        updatePickLabel();
+        updateDetail();
+        renderAllCharts();
+      };
+      wrap.appendChild(btn);
+    });
+
+    // 기본으로 첫 회차 자동 선택(없으면 null)
+    if (selectedRound == null && rounds.length) selectedRound = rounds[0];
+    markActiveButtons();
+  }
+
+  function updatePickLabel() {
+    const typeName = types.find(t=>t.id===selectedTypeId)?.name ?? "-";
+    const subj = selectedSubject ?? "-";
+    const rnd = (selectedRound==null) ? "-" : `${selectedRound}회`;
+    $("currentPick").textContent = `${typeName} / ${subj} / ${rnd}`;
+  }
+
+  // ===== 내 점수/통계/단원 상세 =====
+  function getMyScoreDoc() {
+    if (!selectedTypeId || !selectedSubject || selectedRound==null) return null;
+    return scores.find(s => s.typeId===selectedTypeId && s.subject===selectedSubject && Number(s.round)===Number(selectedRound)) ?? null;
+  }
+
+  function getStatDoc() {
+    if (!selectedTypeId || !selectedSubject || selectedRound==null) return null;
+    return stats.find(s => s.typeId===selectedTypeId && s.subject===selectedSubject && Number(s.round)===Number(selectedRound)) ?? null;
+  }
+
+  function getUnitDocs() {
+    if (!selectedTypeId || !selectedSubject || selectedRound==null) return [];
+    return units
+      .filter(u => u.typeId===selectedTypeId && u.subject===selectedSubject && Number(u.round)===Number(selectedRound))
+      .slice()
+      .sort((a,b)=> (a.unit||"").localeCompare(b.unit||"", "ko"));
+  }
+
+  function updateDetail() {
+    const my = getMyScoreDoc();
+    $("myScoreLabel").textContent = my ? String(my.score) : "-";
+    $("myPctLabel").textContent = (my && my.percentile!=null) ? String(my.percentile) : "-";
+
+    const st = getStatDoc();
+    $("avgLabel").textContent = st && st.avg!=null ? String(st.avg) : "-";
+
+    const ud = getUnitDocs();
+    const tb = $("unitTable");
+    tb.innerHTML = "";
+    if (ud.length === 0) {
+      tb.innerHTML = `<tr><td colspan="3" class="muted">단원 데이터 없음(의가 관리에서 추가)</td></tr>`;
+    } else {
+      ud.forEach(x=>{
+        tb.innerHTML += `<tr><td>${escapeHtml(x.unit)}</td><td>${x.score ?? "-"}</td><td>${x.maxScore ?? "-"}</td></tr>`;
+      });
+    }
+  }
+
+  // ===== 차트 렌더 =====
+  function destroyCharts() {
+    if (c1) c1.destroy(); if (c2) c2.destroy(); if (c3) c3.destroy(); if (c4) c4.destroy();
+    c1=c2=c3=c4=null;
+  }
+
+  function renderChart1() {
+    // 선택한 종류+과목의 회차별 추이
+    const rows = scores
+      .filter(s => s.typeId===selectedTypeId && s.subject===selectedSubject)
+      .map(s => ({ r:Number(s.round), v:Number(s.score) }))
+      .filter(x => Number.isFinite(x.r) && Number.isFinite(x.v))
+      .sort((a,b)=>a.r-b.r);
+
+    const labels = rows.map(x=>`${x.r}회`);
+    const values = rows.map(x=>x.v);
+
+    const ctx = $("chart1").getContext("2d");
+    c1 = new Chart(ctx, {
+      type:"line",
+      data:{ labels, datasets:[{ label:`${selectedSubject} 점수`, data:values, fill:false }] },
+      options:{ responsive:true, scales:{ y:{ beginAtZero:true } } }
+    });
+  }
+
+  function renderChart2() {
+    // 내 모든 시험에서 선택 과목만 모아서 추이(종류 상관없음)
+    const rows = scores
+      .filter(s => s.subject===selectedSubject)
+      .slice()
+      .sort((a,b)=>{
+        const ta = a.createdAt?.seconds ?? 0;
+        const tb = b.createdAt?.seconds ?? 0;
+        return ta - tb;
+      });
+
+    const labels = rows.map(s=>{
+      const tn = types.find(t=>t.id===s.typeId)?.name ?? "?";
+      return `${tn} ${s.round}회`;
+    });
+    const values = rows.map(s=>Number(s.score));
+
+    const ctx = $("chart2").getContext("2d");
+    c2 = new Chart(ctx, {
+      type:"line",
+      data:{ labels, datasets:[{ label:`전체 ${selectedSubject} 추이`, data:values, fill:false }] },
+      options:{ responsive:true, scales:{ y:{ beginAtZero:true } } }
+    });
+  }
+
+  function renderChart3() {
+    // 해당 시험(종류+과목+회차)에서 평균/등급컷과 비교
+    const my = getMyScoreDoc();
+    const st = getStatDoc();
+
+    const myScore = my ? Number(my.score) : null;
+    const avg = st && st.avg!=null ? Number(st.avg) : null;
+
+    // 표시할 막대: 내 점수, 평균(있으면)
+    const labels = [];
+    const values = [];
+    if (myScore!=null && Number.isFinite(myScore)) { labels.push("내 점수"); values.push(myScore); }
+    if (avg!=null && Number.isFinite(avg)) { labels.push("평균"); values.push(avg); }
+
+    const ctx = $("chart3").getContext("2d");
+
+    // 등급컷(있으면 선으로 표시)
+    const cuts = [];
+    if (st) {
+      for (let i=1;i<=9;i++){
+        const v = st[`cut${i}`];
+        if (v!=null && v!=="" && Number.isFinite(Number(v))) cuts.push({ grade:i, value:Number(v) });
+      }
+    }
+
+    c3 = new Chart(ctx, {
+      type:"bar",
+      data:{ labels, datasets:[{ label:`${selectedSubject} 비교`, data:values }] },
+      options:{
+        responsive:true,
+        scales:{ y:{ beginAtZero:true } },
+        plugins:{
+          legend:{ display:true }
+        }
+      },
+      plugins: [{
+        id:"cutLines",
+        afterDatasetsDraw(chart){
+          const {ctx, chartArea:{left,right,top,bottom}, scales:{y}} = chart;
+          ctx.save();
+          ctx.setLineDash([6,6]);
+          ctx.lineWidth = 1;
+          cuts.forEach(c=>{
+            const yPos = y.getPixelForValue(c.value);
+            ctx.beginPath();
+            ctx.moveTo(left, yPos);
+            ctx.lineTo(right, yPos);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = "#374151";
+            ctx.font = "12px system-ui";
+            ctx.fillText(`${c.grade}컷 ${c.value}`, left+6, yPos-4);
+            ctx.setLineDash([6,6]);
+          });
+          ctx.restore();
+        }
+      }]
+    });
+  }
+
+  function renderChart4() {
+    // 단원별 점수 비교(해당 시험)
+    const ud = getUnitDocs();
+    const labels = ud.map(x=>x.unit);
+    const values = ud.map(x=>Number(x.score));
+
+    const ctx = $("chart4").getContext("2d");
+    c4 = new Chart(ctx, {
+      type:"bar",
+      data:{ labels, datasets:[{ label:`단원별 ${selectedSubject}`, data:values }] },
+      options:{ responsive:true, scales:{ y:{ beginAtZero:true } } }
+    });
+  }
+
+  function renderAllCharts() {
+    if (!selectedTypeId || !selectedSubject) return;
+    destroyCharts();
+    // 회차 선택 없어도 1/2는 그릴 수 있지만, 3/4는 회차 필요
+    renderChart1();
+    renderChart2();
+    renderChart3();
+    renderChart4();
+  }
+
+  // ===== 점수 저장/업데이트 (의 전용) =====
+  async function upsertMyScore() {
+    if (currentGrade !== "의") return;
+    if (!selectedTypeId || !selectedSubject || selectedRound==null) {
+      alert("종류/과목/회차를 먼저 선택해줘.");
+      return;
+    }
+
+    const score = parseInt($("scoreInput").value, 10);
+    if (Number.isNaN(score)) return alert("점수를 숫자로 입력해줘.");
+
+    const pctRaw = $("percentileInput").value.trim();
+    const percentile = pctRaw === "" ? null : parseInt(pctRaw, 10);
+
+    // 동일 조합(종류+과목+회차) 문서 있으면 update, 없으면 add
+    const existing = getMyScoreDoc();
+    if (existing) {
+      await updateDoc(doc(db, "sb_scores", existing.id), { score, percentile });
+    } else {
+      await addDoc(colScores, {
+        typeId: selectedTypeId,
+        subject: selectedSubject,
+        round: Number(selectedRound),
+        score,
+        percentile,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    $("scoreInput").value = "";
+    $("percentileInput").value = "";
+  }
+
+  // ===== 관리: 종류/유저/로그 =====
   function renderTypeList() {
     if (currentGrade !== "의") return;
     const wrap = $("typeList");
-    if (!wrap) return;
     if (types.length === 0) {
-      wrap.innerHTML = "등록된 종류 없음";
+      wrap.textContent = "등록된 종류 없음";
       return;
     }
     wrap.innerHTML = types.map(t => `
@@ -311,113 +654,21 @@
 
   window.deleteType = async (typeId) => {
     if (currentGrade !== "의") return;
-    // 이 타입 점수가 있으면 삭제 막기(실수 방지)
     const hasScore = scores.some(s => s.typeId === typeId);
-    if (hasScore) {
-      alert("이 종류로 저장된 점수가 있어서 삭제할 수 없어. (점수 먼저 삭제해야 함)");
-      return;
-    }
+    if (hasScore) return alert("이 종류 점수가 있어서 삭제 불가(점수 먼저 삭제해야 함)");
     await deleteDoc(doc(db, "sb_types", typeId));
   };
 
-  // ===== 점수 UI =====
-  function renderTable() {
-    const tbody = $("scoreTable");
-    tbody.innerHTML = "";
-
-    for (const s of scores) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${escapeHtml(s.typeName)}</td>
-        <td>${escapeHtml(s.round)}</td>
-        <td>${escapeHtml(s.examName)}</td>
-        <td>${s.korean}</td>
-        <td>${s.math}</td>
-        <td>${s.english}</td>
-        <td><b>${s.total}</b></td>
-        <td>${s.percentile ?? "-"}</td>
-        ${currentGrade === "의" ? `<td><button class="ghost" type="button" onclick="editScore('${s.id}')">수정</button></td>` : ""}
-        ${currentGrade === "의" ? `<td><button class="danger" type="button" onclick="deleteScore('${s.id}')">삭제</button></td>` : ""}
-      `;
-      tbody.appendChild(tr);
-    }
-  }
-
-  function renderChart() {
-    const canvas = $("scoreChart");
-    const ctx = canvas.getContext("2d");
-    const labels = scores.map(s => `${s.typeName} ${s.round}회`);
-    const totals = scores.map(s => s.total);
-
-    if (chart) chart.destroy();
-    chart = new Chart(ctx, {
-      type: "line",
-      data: { labels, datasets: [{ label: "총점 추이", data: totals, fill: false }] },
-      options: { responsive: true, scales: { y: { beginAtZero: true } } }
-    });
-  }
-
-  function renderStats() {
-    // 전체 평균
-    $("overallAvg").textContent = fmt(avg(scores.map(s => s.total)));
-
-    const selectedTypeId = $("typeSelect").value;
-    const selectedRound = parseInt($("roundInput").value, 10);
-
-    const byType = scores.filter(s => s.typeId === selectedTypeId);
-    $("typeAvg").textContent = fmt(avg(byType.map(s => s.total)));
-
-    const byTypeRound = byType.filter(s => s.round === selectedRound);
-    $("typeRoundAvg").textContent = fmt(avg(byTypeRound.map(s => s.total)));
-  }
-
-  $("typeSelect").addEventListener("change", renderStats);
-  $("roundInput").addEventListener("input", renderStats);
-
-  window.deleteScore = async (id) => {
-    if (currentGrade !== "의") return;
-    await deleteDoc(doc(db, "sb_scores", id));
-  };
-
-  window.editScore = async (id) => {
-    if (currentGrade !== "의") return;
-    const s = scores.find(x => x.id === id);
-    if (!s) return;
-
-    const nk = prompt("국어 점수", s.korean);
-    if (nk === null) return;
-    const nm = prompt("수학 점수", s.math);
-    if (nm === null) return;
-    const ne = prompt("영어 점수", s.english);
-    if (ne === null) return;
-    const np = prompt("백분위(없으면 빈칸)", s.percentile ?? "");
-    if (np === null) return;
-
-    const korean = parseInt(nk, 10);
-    const math = parseInt(nm, 10);
-    const english = parseInt(ne, 10);
-    if ([korean, math, english].some(v => Number.isNaN(v))) {
-      alert("점수는 숫자로 입력해줘.");
-      return;
-    }
-    const total = korean + math + english;
-    const percentile = (np.trim()==="") ? null : parseInt(np, 10);
-
-    await updateDoc(doc(db, "sb_scores", id), { korean, math, english, total, percentile });
-  };
-
-  // ===== 유저(비밀번호/등급) 관리 =====
   function renderUsers() {
     if (currentGrade !== "의") return;
     const wrap = $("userList");
     wrap.innerHTML = "";
-
-    users.forEach(u => {
+    users.forEach(u=>{
       const div = document.createElement("div");
       div.className = "card";
       div.innerHTML = `
         <div class="t">비밀번호: <b>${escapeHtml(u.password)}</b></div>
-        <div class="d">등급: <b>${u.grade}</b></div>
+        <div class="d">등급: <b>${escapeHtml(u.grade)}</b></div>
         <button class="danger" type="button" style="margin-top:8px" onclick="removeUser('${u.id}')">삭제</button>
       `;
       wrap.appendChild(div);
@@ -426,196 +677,201 @@
 
   window.removeUser = async (id) => {
     if (currentGrade !== "의") return;
-    const u = users.find(x => x.id === id);
+    const u = users.find(x=>x.id===id);
     if (!u) return;
-    if (u.password === "0704160931") {
-      alert("기본 의 비번은 삭제하지 않는 걸 추천해.");
-      return;
-    }
+    if (u.password === "0704160931") return alert("기본 의 비번은 삭제하지 않는 걸 추천해.");
     await deleteDoc(doc(db, "sb_users", id));
   };
 
   function renderLogs() {
     if (currentGrade !== "의") return;
     const box = $("loginRecords");
-    if (!box) return;
-    if (logs.length === 0) {
-      box.textContent = "기록 없음";
+    if (logs.length === 0) return box.textContent = "기록 없음";
+    box.innerHTML = logs.slice().reverse().map(l=>`• [${escapeHtml(l.time)}] 등급: ${escapeHtml(l.grade)}`).join("<br/>");
+  }
+
+  // ===== 관리: 통계 저장/업데이트 (그래프3 데이터) =====
+  async function upsertStats() {
+    if (currentGrade !== "의") return;
+    if (!selectedTypeId || !selectedSubject || selectedRound==null) {
+      alert("종류/과목/회차를 먼저 선택해줘.");
       return;
     }
-    box.innerHTML = logs.slice().reverse().map(l => `• [${escapeHtml(l.time)}] 등급: ${escapeHtml(l.grade)}`).join("<br/>");
-  }
 
-  // ===== Firestore 실시간 구독 =====
-  function startRealtime() {
-    onSnapshot(query(colTypes, orderBy("createdAt", "asc")), (snap) => {
-      types = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderTypeSelect();
-      if (currentGrade === "의") renderTypeList();
-      renderStats();
-    });
+    const avg = $("statAvg").value.trim()==="" ? null : Number($("statAvg").value);
+    const data = {
+      typeId: selectedTypeId,
+      subject: selectedSubject,
+      round: Number(selectedRound),
+      avg: (avg==null || Number.isNaN(avg)) ? null : avg,
+      createdAt: serverTimestamp()
+    };
 
-    onSnapshot(query(colScores, orderBy("createdAt", "asc")), (snap) => {
-      const typeMap = new Map(types.map(t => [t.id, t.name]));
-      scores = snap.docs.map(d => {
-        const data = d.data();
-        return {
-          id: d.id,
-          ...data,
-          typeName: typeMap.get(data.typeId) ?? "(삭제된 종류)"
-        };
-      });
-      renderTable();
-      renderChart();
-      renderStats();
-    });
-
-    onSnapshot(query(colUsers, orderBy("createdAt", "asc")), (snap) => {
-      users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (currentGrade === "의") renderUsers();
-    });
-
-    onSnapshot(query(colLogs, orderBy("createdAt", "asc")), (snap) => {
-      logs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      if (currentGrade === "의") renderLogs();
-    });
-  }
-
-  // ===== 로그인 =====
-  async function ensureDefaultAdminIfNeeded(enteredPw) {
-    // users가 비어있고 entered가 기본 의 비번이면 자동 생성
-    const snap = await getDocs(query(colUsers, limit(1)));
-    if (snap.empty && enteredPw === "0704160931") {
-      await addDoc(colUsers, { password: "0704160931", grade: "의", createdAt: serverTimestamp() });
-      // 기본 타입도 하나 만들어주기(없으면 UI가 답답하니까)
-      const typeSnap = await getDocs(query(colTypes, limit(1)));
-      if (typeSnap.empty) {
-        await addDoc(colTypes, { name: "학력평가", createdAt: serverTimestamp() });
-        await addDoc(colTypes, { name: "서바이벌", createdAt: serverTimestamp() });
-      }
-      return true;
+    for (let i=1;i<=9;i++){
+      const v = $(`cut${i}`).value.trim();
+      data[`cut${i}`] = v==="" ? null : Number(v);
+      if (Number.isNaN(data[`cut${i}`])) data[`cut${i}`] = null;
     }
-    return false;
+
+    const existing = getStatDoc();
+    if (existing) {
+      await updateDoc(doc(db, "sb_exam_stats", existing.id), data);
+    } else {
+      await addDoc(colStats, data);
+    }
   }
 
-  async function logLogin(grade) {
-    await addDoc(colLogs, { grade, time: new Date().toLocaleString(), createdAt: serverTimestamp() });
+  // ===== 관리: 단원 추가 (그래프4 데이터) =====
+  async function addUnit() {
+    if (currentGrade !== "의") return;
+    if (!selectedTypeId || !selectedSubject || selectedRound==null) {
+      alert("종류/과목/회차를 먼저 선택해줘.");
+      return;
+    }
+
+    const unit = $("unitName").value.trim();
+    const score = $("unitScore").value.trim()==="" ? null : Number($("unitScore").value);
+    const maxScore = $("unitMax").value.trim()==="" ? null : Number($("unitMax").value);
+
+    if (!unit) return alert("단원명을 입력해줘.");
+    if (score==null || Number.isNaN(score)) return alert("단원 점수를 숫자로 입력해줘.");
+
+    await addDoc(colUnits, {
+      typeId: selectedTypeId,
+      subject: selectedSubject,
+      round: Number(selectedRound),
+      unit,
+      score,
+      maxScore: (maxScore==null || Number.isNaN(maxScore)) ? null : maxScore,
+      createdAt: serverTimestamp()
+    });
+
+    $("unitName").value = "";
+    $("unitScore").value = "";
+    $("unitMax").value = "";
   }
 
-  $("loginBtn").addEventListener("click", async () => {
+  // ===== 실시간 구독 =====
+  function startRealtime() {
+    onSnapshot(query(colTypes, orderBy("createdAt","asc")), (snap)=>{
+      types = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      renderTypeSelect();
+
+      // selectedTypeId 유지/갱신
+      const sel = $("typeSelect");
+      if (!selectedTypeId && sel.value) selectedTypeId = sel.value;
+      if (selectedTypeId && !types.some(t=>t.id===selectedTypeId)) selectedTypeId = sel.value;
+
+      updatePickLabel();
+      renderRoundButtonsAuto();
+      updateDetail();
+      renderAllCharts();
+
+      if (currentGrade==="의") renderTypeList();
+    });
+
+    onSnapshot(query(colScores, orderBy("createdAt","asc")), (snap)=>{
+      scores = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      renderRoundButtonsAuto();
+      updateDetail();
+      renderAllCharts();
+    });
+
+    onSnapshot(query(colUsers, orderBy("createdAt","asc")), (snap)=>{
+      users = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      if (currentGrade==="의") renderUsers();
+    });
+
+    onSnapshot(query(colLogs, orderBy("createdAt","asc")), (snap)=>{
+      logs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      if (currentGrade==="의") renderLogs();
+    });
+
+    onSnapshot(query(colStats, orderBy("createdAt","asc")), (snap)=>{
+      stats = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      updateDetail();
+      renderAllCharts();
+    });
+
+    onSnapshot(query(colUnits, orderBy("createdAt","asc")), (snap)=>{
+      units = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      updateDetail();
+      renderAllCharts();
+    });
+  }
+
+  // ===== 이벤트 =====
+  $("typeSelect").addEventListener("change", ()=>{
+    selectedTypeId = $("typeSelect").value;
+    selectedRound = null;
+    updatePickLabel();
+    renderRoundButtonsAuto();
+    updateDetail();
+    renderAllCharts();
+  });
+
+  $("loginBtn").addEventListener("click", async ()=>{
     const entered = $("pwInput").value.trim();
     if (!entered) return alert("비밀번호를 입력해줘.");
 
     await ensureDefaultAdminIfNeeded(entered);
 
-    // users 목록을 한번 읽어 로그인 확인
     const snap = await getDocs(colUsers);
-    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const found = list.find(u => u.password === entered);
+    const list = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    const found = list.find(u=>u.password===entered);
     if (!found) return alert("비밀번호가 틀렸습니다.");
 
     currentGrade = found.grade;
     await logLogin(currentGrade);
 
     applyPermissions();
+    renderSubjectButtons();
+    updatePickLabel();
     startRealtime();
   });
 
-  // ===== 점수 추가 =====
-  $("addScoreBtn").addEventListener("click", async () => {
-    if (currentGrade !== "의") return;
-
-    const typeId = $("typeSelect").value;
-    const round = parseInt($("roundInput").value, 10);
-    const examName = $("examName").value.trim();
-
-    const korean = parseInt($("korean").value, 10);
-    const math = parseInt($("math").value, 10);
-    const english = parseInt($("english").value, 10);
-    const percentileRaw = $("percentile").value.trim();
-
-    if (!typeId) return alert("모의고사 종류를 선택해줘.");
-    if (Number.isNaN(round) || round < 1) return alert("회차를 숫자로 입력해줘 (예: 1).");
-    if (!examName) return alert("시험 이름을 입력해줘.");
-    if ([korean, math, english].some(v => Number.isNaN(v))) return alert("점수를 모두 숫자로 입력해줘.");
-
-    const total = korean + math + english;
-    const percentile = percentileRaw === "" ? null : parseInt(percentileRaw, 10);
-
-    await addDoc(colScores, {
-      typeId,
-      round,
-      examName,
-      korean, math, english,
-      total,
-      percentile,
-      createdAt: serverTimestamp()
-    });
-
-    // 입력칸 정리
-    $("examName").value = "";
-    $("korean").value = "";
-    $("math").value = "";
-    $("english").value = "";
-    $("percentile").value = "";
+  $("logoutBtn").addEventListener("click", ()=>{
+    // 간단 로그아웃(새로고침)
+    location.reload();
   });
 
-  // ===== 관리탭 =====
-  $("manageTab").addEventListener("click", () => {
-    if (currentGrade !== "의") return;
+  $("manageTab").addEventListener("click", ()=>{
+    if (currentGrade!=="의") return;
     $("manageSection").classList.toggle("hidden");
+    renderTypeList();
     renderUsers();
     renderLogs();
-    renderTypeList();
-    $("manageSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("manageSection").scrollIntoView({behavior:"smooth", block:"start"});
   });
 
-  $("addTypeBtn").addEventListener("click", async () => {
-    if (currentGrade !== "의") return;
+  $("addTypeBtn").addEventListener("click", async ()=>{
+    if (currentGrade!=="의") return;
     const name = $("newTypeInput").value.trim();
     if (!name) return alert("종류 이름을 입력해줘.");
-    // 중복 방지
-    if (types.some(t => t.name === name)) return alert("이미 있는 종류야.");
+    if (types.some(t=>t.name===name)) return alert("이미 있는 종류야.");
     await addDoc(colTypes, { name, createdAt: serverTimestamp() });
     $("newTypeInput").value = "";
   });
 
-  $("addUserBtn").addEventListener("click", async () => {
-    if (currentGrade !== "의") return;
+  $("addUserBtn").addEventListener("click", async ()=>{
+    if (currentGrade!=="의") return;
     const pw = $("newPw").value.trim();
     const grade = $("newGrade").value;
     if (!pw) return alert("새 비밀번호를 입력해줘.");
-    // 중복 방지
-    if (users.some(u => u.password === pw)) return alert("이미 있는 비밀번호야.");
+    if (users.some(u=>u.password===pw)) return alert("이미 있는 비밀번호야.");
     await addDoc(colUsers, { password: pw, grade, createdAt: serverTimestamp() });
     $("newPw").value = "";
   });
 
-  $("clearLogsBtn").addEventListener("click", async () => {
-    if (currentGrade !== "의") return;
-    // 로그 전부 삭제(간단 구현)
+  $("clearLogsBtn").addEventListener("click", async ()=>{
+    if (currentGrade!=="의") return;
     const snap = await getDocs(colLogs);
-    const promises = snap.docs.map(d => deleteDoc(doc(db, "sb_logs", d.id)));
-    await Promise.all(promises);
+    await Promise.all(snap.docs.map(d=>deleteDoc(doc(db,"sb_logs", d.id))));
   });
 
-  // ===== 로그아웃 =====
-  $("logoutBtn").addEventListener("click", () => {
-    currentGrade = null;
-    $("loginSection").classList.remove("hidden");
-    $("scoresSection").classList.add("hidden");
-    $("statsSection").classList.add("hidden");
-    $("materialsSection").classList.add("hidden");
-    $("universitySection").classList.add("hidden");
-    $("info2026Section").classList.add("hidden");
-    $("manageSection").classList.add("hidden");
-    $("roleBadge").classList.add("hidden");
-    $("manageTab").classList.add("hidden");
-    $("logoutBtn").classList.add("hidden");
-    $("pwInput").value = "";
-  });
-
+  $("saveScoreBtn").addEventListener("click", upsertMyScore);
+  $("saveStatsBtn").addEventListener("click", upsertStats);
+  $("addUnitBtn").addEventListener("click", addUnit);
 </script>
 </body>
 </html>
-

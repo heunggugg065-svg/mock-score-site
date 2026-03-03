@@ -626,6 +626,7 @@ function canUseAllRounds(grade){
       if(!selectedYear) selectedYear = state.currentYear;
 
       if(currentUser){
+        syncSelectionsFromDOM();
         refreshAll();
       }else{
         boot();
@@ -668,8 +669,18 @@ function canUseAllRounds(grade){
     if(c1) c1.destroy(); if(c2) c2.destroy(); if(c3) c3.destroy(); if(c4) c4.destroy(); if(c5) c5.destroy();
     c1=c2=c3=c4=c5=null;
   }
+  // DOM에서 현재 선택값을 다시 읽어서(실시간 동기화/리렌더로 선택이 튀는 문제 방지)
+  function syncSelectionsFromDOM(){
+    const ySel = $("yearSelect");
+    const tSel = $("typeSelect");
+    if(ySel && ySel.value) selectedYear = String(ySel.value);
+    if(tSel && tSel.value) selectedTypeId = String(tSel.value);
+  }
+
+
 
   function refreshAll(){
+    syncSelectionsFromDOM();
     renderYearSelect();
     renderSubjectButtons();
     renderTypeSelect();
